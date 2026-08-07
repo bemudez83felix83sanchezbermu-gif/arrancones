@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: #0A0A0A;
+  color: #F5F5F5;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: #E10600;
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #E10600;
+  border-radius: 4px;
+}
+
+@layer components {
+  .display {
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    letter-spacing: 0.02em;
+    line-height: 0.95;
+  }
+  .btn-racing {
+    @apply relative inline-flex items-center justify-center gap-2 px-8 py-4 font-semibold uppercase tracking-wider text-white transition-all duration-200;
+    background: linear-gradient(135deg, #E10600 0%, #B00000 100%);
+    clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+  }
+  .btn-racing:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+  }
+  .btn-ghost {
+    @apply relative inline-flex items-center justify-center gap-2 px-8 py-4 font-semibold uppercase tracking-wider text-white border-2 border-white/30 transition-all duration-200;
+    clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+  }
+  .btn-ghost:hover {
+    border-color: #E10600;
+    background: rgba(225, 6, 0, 0.1);
+  }
+  .section-heading {
+    @apply display text-5xl md:text-7xl uppercase text-white;
+  }
+  .stripe-red {
+    background: repeating-linear-gradient(
+      45deg,
+      #E10600 0,
+      #E10600 20px,
+      #B00000 20px,
+      #B00000 40px
+    );
+  }
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(225, 6, 0, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(245, 179, 1, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+}
