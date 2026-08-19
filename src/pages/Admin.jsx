@@ -1,8 +1,17 @@
-import { useState } from 'react';
-import { AlertCircle, ArrowLeft, BarChart3, RefreshCw, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  BarChart3,
+  ClipboardList,
+  LogOut,
+  RefreshCw,
+  Users,
+} from 'lucide-react';
 import { EVENT } from '../data/event';
 import { useParticipants } from '../lib/useParticipants';
-import { Link } from '../router';
+import { useAuth } from '../lib/useAuth';
+import { Link, navigate } from '../router';
 import ParticipantsView from '../components/admin/ParticipantsView';
 import ReportsView from '../components/admin/ReportsView';
 import { BUTTON } from '../components/admin/ui';
@@ -13,9 +22,27 @@ const TABS = [
 ];
 
 export default function Admin() {
+  const { admin, status, logout } = useAuth();
+  const [tab, setTab] = useState('participantes');
+
+  useEffect(() => {
+    if (status === 'anon') navigate('/login');
+  }, [status]);
+
+  if (status !== 'authed') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0A0A0A]">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-racing-red" />
+      </div>
+    );
+  }
+
+  return <AdminPanel admin={admin} logout={logout} tab={tab} setTab={setTab} />;
+}
+
+function AdminPanel({ admin, logout, tab, setTab }) {
   const { participants, loading, error, syncedAt, refresh, create, update, remove } =
     useParticipants();
-  const [tab, setTab] = useState('participantes');
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -47,9 +74,29 @@ export default function Admin() {
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar
             </button>
+            <Link to="/registro" className={BUTTON.ghost}>
+              <ClipboardList size={15} /> Formulario
+            </Link>
             <Link to="/" className={BUTTON.subtle}>
               <ArrowLeft size={14} /> Sitio
             </Link>
+            <div className="hidden h-6 w-px bg-white/10 md:block" aria-hidden="true" />
+            {admin && (
+              <span className="hidden text-xs text-white/45 md:inline" title={admin.username}>
+                {admin.username}
+              </span>
+            )}
+            <button
+              type="button"
+              className={BUTTON.ghost}
+              onClick={async () => {
+                await logout();
+                navigate('/login');
+              }}
+              title="Cerrar sesión"
+            >
+              <LogOut size={15} /> Salir
+            </button>
           </div>
         </div>
 

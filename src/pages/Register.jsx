@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Loader2, MessageCircle, AlertCircle, Info } from 'lucide-react';
-import { EVENT, WHATSAPP_URL } from '../data/event';
-import { CATEGORIES, folio, validateParticipant } from '../../shared/participants';
+import { ArrowLeft, Check, Loader2, AlertCircle, Info } from 'lucide-react';
+import { EVENT } from '../data/event';
+import { CATEGORIES, validateParticipant } from '../../shared/participants';
 import { ESTADOS, ESTADO_OTRO, municipiosDe } from '../../shared/mexico';
 import { createParticipant } from '../lib/api';
 import { Link } from '../router';
@@ -110,9 +110,12 @@ export default function Register() {
   }, [category, form.copilot_name]);
 
   if (done) {
-    const message = `Hola, acabo de registrarme en ${EVENT.name}. Mi folio es ${folio(done.id)} (${
-      CATEGORIES[done.category].label
-    }, ${done.vehicle_name}).`;
+    const registerAnother = () => {
+      setDone(null);
+      setForm(EMPTY);
+      setErrors({});
+      window.scrollTo({ top: 0 });
+    };
 
     return (
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-4 py-16">
@@ -126,13 +129,9 @@ export default function Register() {
           </div>
           <h1 className="display mt-6 text-4xl uppercase md:text-5xl">¡Registro recibido!</h1>
           <p className="mt-3 text-white/60">
-            Guarda tu folio. Con él te identificamos el día del evento.
+            Ya estás en la lista de {CATEGORIES[done.category].label}. Te esperamos el{' '}
+            {CATEGORIES[done.category].day.toLowerCase()} en {EVENT.venue}.
           </p>
-
-          <div className="mt-8 border border-racing-red/40 bg-racing-red/5 py-6">
-            <span className="text-xs uppercase tracking-[0.3em] text-white/50">Tu folio</span>
-            <p className="display mt-1 text-5xl text-racing-red">{folio(done.id)}</p>
-          </div>
 
           <dl className="mt-8 space-y-3 text-left text-sm">
             {[
@@ -150,14 +149,9 @@ export default function Register() {
             ))}
           </dl>
 
-          <a
-            href={WHATSAPP_URL(message)}
-            target="_blank"
-            rel="noreferrer"
-            className="btn-racing mt-8 w-full"
-          >
-            <MessageCircle size={18} /> Confirmar por WhatsApp
-          </a>
+          <button type="button" onClick={registerAnother} className="btn-racing mt-8 w-full">
+            Registrar otro vehículo
+          </button>
           <Link
             to="/"
             className="mt-4 block text-sm text-white/50 underline-offset-4 hover:text-white hover:underline"
@@ -186,8 +180,8 @@ export default function Register() {
           Registra tu <span className="text-racing-red">máquina</span>
         </h1>
         <p className="mt-4 max-w-xl text-white/60">
-          {EVENT.displayDate} · {EVENT.venue}, {EVENT.city}. Llena el formulario y te contactamos
-          por WhatsApp para confirmar tu lugar.
+          {EVENT.displayDate} · {EVENT.venue}, {EVENT.city}. Llena el formulario y tu lugar queda
+          apartado. Guardamos tu WhatsApp solo por si hay cambios en el programa.
         </p>
       </header>
 

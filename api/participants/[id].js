@@ -1,4 +1,5 @@
 import { asParticipant, getSql, json, readBody, withErrors } from '../../shared/db.js';
+import { getCurrentAdmin } from '../../shared/auth.js';
 import { validateParticipant } from '../../shared/participants.js';
 
 const EDITABLE = [
@@ -15,6 +16,9 @@ const EDITABLE = [
 ];
 
 export default withErrors(async (req, res) => {
+  const admin = await getCurrentAdmin(req);
+  if (!admin) return json(res, 401, { error: 'No autorizado' });
+
   const sql = getSql();
   const id = Number(req.query?.id);
   if (!Number.isInteger(id) || id <= 0) return json(res, 400, { error: 'Folio inválido' });

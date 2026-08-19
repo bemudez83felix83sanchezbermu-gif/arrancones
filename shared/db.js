@@ -22,6 +22,8 @@ export function getSql() {
 /** El driver devuelve bigint como texto; el id se usa como número en todo el panel. */
 export const asParticipant = (row) => (row ? { ...row, id: Number(row.id) } : row);
 
+export const asAdmin = (row) => (row ? { ...row, id: Number(row.id) } : row);
+
 export const json = (res, status, body) => {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');

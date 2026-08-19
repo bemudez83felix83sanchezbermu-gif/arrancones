@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { ClipboardList, Menu, X } from 'lucide-react';
+import { Link } from '../router';
 
 const links = [
   { href: '#evento', label: 'Evento' },
@@ -58,15 +59,32 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+
+          <Link
+            to="/registro"
+            className="inline-flex items-center gap-2 bg-racing-red px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+            style={{ clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)' }}
+          >
+            <ClipboardList size={15} /> Inscríbete
+          </Link>
         </nav>
 
-        <button
-          className="md:hidden text-white"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Menú"
-        >
-          {open ? <X size={26} /> : <Menu size={26} />}
-        </button>
+        <div className="flex items-center gap-3 md:hidden">
+          <Link
+            to="/registro"
+            className="bg-racing-red px-4 py-2 text-xs font-bold uppercase tracking-wider text-white"
+            style={{ clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)' }}
+          >
+            Inscríbete
+          </Link>
+          <button
+            className="text-white"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menú"
+          >
+            {open ? <X size={26} /> : <Menu size={26} />}
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -86,6 +104,14 @@ export default function Navbar() {
                 {l.label}
               </a>
             ))}
+
+            <Link
+              to="/registro"
+              onClick={() => setOpen(false)}
+              className="mt-4 flex items-center justify-center gap-2 bg-racing-red py-3 text-sm font-bold uppercase tracking-wider text-white"
+            >
+              <ClipboardList size={16} /> Inscribir mi vehículo
+            </Link>
           </div>
         </motion.nav>
       )}

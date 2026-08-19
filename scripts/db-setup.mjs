@@ -36,5 +36,18 @@ await sql`create index if not exists participants_created_idx  on participants (
 await sql`create index if not exists participants_city_idx     on participants (lower(city))`;
 await sql`create index if not exists participants_state_idx     on participants (state)`;
 
+await sql`
+  create table if not exists admins (
+    id            bigint generated always as identity primary key,
+    username      text not null unique,
+    password_hash text not null,
+    created_at    timestamptz not null default now(),
+    updated_at    timestamptz not null default now(),
+    last_login_at timestamptz
+  )
+`;
+await sql`create index if not exists admins_username_lower_idx on admins (lower(username))`;
+
 const [{ count }] = await sql`select count(*)::int as count from participants`;
-console.log(`OK · tabla participants lista · ${count} registros`);
+const [{ admins }] = await sql`select count(*)::int as admins from admins`;
+console.log(`OK · tabla participants lista · ${count} registros · ${admins} admin(s)`);

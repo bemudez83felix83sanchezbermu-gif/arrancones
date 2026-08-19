@@ -1,10 +1,13 @@
 import { asParticipant, getSql, json, readBody, withErrors } from '../../shared/db.js';
+import { getCurrentAdmin } from '../../shared/auth.js';
 import { validateParticipant } from '../../shared/participants.js';
 
 export default withErrors(async (req, res) => {
   const sql = getSql();
 
   if (req.method === 'GET') {
+    const admin = await getCurrentAdmin(req);
+    if (!admin) return json(res, 401, { error: 'No autorizado' });
     const participants = await sql`
       select * from participants
       order by created_at desc, id desc

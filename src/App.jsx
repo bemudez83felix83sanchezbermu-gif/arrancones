@@ -4,6 +4,7 @@ import Landing from './pages/Landing';
 
 const Register = lazy(() => import('./pages/Register'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Login = lazy(() => import('./pages/Login'));
 
 function Loading() {
   return (
@@ -35,6 +36,8 @@ export default function App() {
       <Register />
     ) : path === '/admin' ? (
       <Admin />
+    ) : path === '/login' ? (
+      <Login />
     ) : (
       <NotFound />
     );

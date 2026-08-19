@@ -1,5 +1,6 @@
 const request = async (url, options = {}) => {
   const response = await fetch(url, {
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -33,3 +34,11 @@ export const updateParticipant = (id, body) =>
 
 export const deleteParticipant = (id) =>
   request(`/api/participants/${id}`, { method: 'DELETE' });
+
+export const login = (body) =>
+  request('/api/auth/login', { method: 'POST', body }).then((data) => data.admin);
+
+export const logout = () => request('/api/auth/logout', { method: 'POST' });
+
+export const fetchCurrentAdmin = () =>
+  request('/api/auth/me').then((data) => data.admin);
