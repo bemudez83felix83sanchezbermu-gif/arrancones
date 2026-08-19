@@ -392,7 +392,15 @@ class App {
     this.scrollSpeed = scrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onItemClick = onItemClick;
-    this.pointer = { startX: 0, startY: 0, startTime: 0, moved: 0, clientX: 0, active: false };
+    this.pointer = {
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      moved: 0,
+      clientX: 0,
+      active: false,
+      startedInside: false
+    };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.createRenderer();
     this.createCamera();
@@ -465,40 +473,60 @@ class App {
       return media;
     });
   }
+  isPointerInside(clientX, clientY) {
+    if (!this.container) return false;
+    const rect = this.container.getBoundingClientRect();
+    return (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom
+    );
+  }
   onTouchDown(e) {
-    this.isDown = true;
-    this.scroll.position = this.scroll.current;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    this.start = clientX;
+    const startedInside = this.isPointerInside(clientX, clientY);
     this.pointer.active = true;
+    this.pointer.startedInside = startedInside;
     this.pointer.startX = clientX;
     this.pointer.startY = clientY;
     this.pointer.startTime = Date.now();
     this.pointer.moved = 0;
     this.pointer.clientX = clientX;
+    if (!startedInside) {
+      this.isDown = false;
+      return;
+    }
+    this.isDown = true;
+    this.scroll.position = this.scroll.current;
+    this.start = clientX;
   }
   onTouchMove(e) {
-    if (!this.isDown) return;
+    if (!this.pointer.active) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    if (this.pointer.active) {
-      const dx = clientX - this.pointer.startX;
-      const dy = clientY - this.pointer.startY;
-      this.pointer.moved = Math.max(this.pointer.moved, Math.hypot(dx, dy));
-      this.pointer.clientX = clientX;
-    }
+    const dx = clientX - this.pointer.startX;
+    const dy = clientY - this.pointer.startY;
+    this.pointer.moved = Math.max(this.pointer.moved, Math.hypot(dx, dy));
+    this.pointer.clientX = clientX;
+    if (!this.isDown) return;
     const distance = (this.start - clientX) * (this.scrollSpeed * 0.025);
     this.scroll.target = this.scroll.position + distance;
   }
   onTouchUp(e) {
-    this.isDown = false;
+    if (!this.pointer.active) return;
+    const startedInside = this.pointer.startedInside;
     const wasQuick = Date.now() - this.pointer.startTime <= CLICK_MAX_DURATION;
     const wasStill = this.pointer.moved <= CLICK_MAX_MOVEMENT;
     const clientX =
       e && e.changedTouches ? e.changedTouches[0].clientX : this.pointer.clientX;
+    const clientY =
+      e && e.changedTouches ? e.changedTouches[0].clientY : this.pointer.startY;
+    this.isDown = false;
     this.pointer.active = false;
-    if (this.onItemClick && wasQuick && wasStill) {
+    if (!startedInside) return;
+    if (this.onItemClick && wasQuick && wasStill && this.isPointerInside(clientX, clientY)) {
       const media = this.findMediaAtClientX(clientX);
       if (media) this.onItemClick(media.data);
       return;
