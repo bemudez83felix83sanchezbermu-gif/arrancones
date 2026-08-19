@@ -85,3 +85,29 @@ body {
     pointer-events: none;
   }
 }
+
+/* Impresión del reporte del panel: fondo claro, tinta oscura, marcas a color. */
+@media print {
+  html,
+  body,
+  #root {
+    background: #fff;
+    color: #111;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-area,
+  .print-area * {
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-area .surface-card {
+    background: #fff !important;
+    border-color: #e0e0e0 !important;
+  }
+  .print-area {
+    break-inside: avoid;
+  }
+}

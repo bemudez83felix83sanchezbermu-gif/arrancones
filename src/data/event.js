@@ -37,8 +37,20 @@ export const EVENT = {
     { name: 'Bikers', icon: 'bike' },
   ],
   confirmed: [
-    { name: 'Leon Racing', note: 'Confirmado para el 27 de septiembre' },
-    { name: 'La Paloma', note: '"Miel no hay..!" — Quiere rival' },
+    {
+      name: 'Leon Racing',
+      note: 'Confirmado para el 27 de septiembre',
+      image: '/images/competitors/placeholder-driver.svg',
+      borderColor: '#E10600',
+      gradient: 'linear-gradient(145deg, #E10600, #0A0A0A)',
+    },
+    {
+      name: 'La Paloma',
+      note: '"Miel no hay..!" — Quiere rival',
+      image: '/images/competitors/placeholder-driver.svg',
+      borderColor: '#F5B301',
+      gradient: 'linear-gradient(145deg, #F5B301, #0A0A0A)',
+    },
   ],
   contact: {
     whatsapp: '526383865268',

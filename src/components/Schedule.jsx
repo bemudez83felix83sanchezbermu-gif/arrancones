@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { CalendarDays, Trophy } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { EVENT } from '../data/event';
 
 export default function Schedule() {
@@ -63,35 +63,6 @@ export default function Schedule() {
             </motion.article>
           ))}
         </div>
-
-        {/* Confirmed guests */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-14 border border-white/10 bg-gradient-to-r from-racing-red/10 via-racing-asphalt to-racing-asphalt p-6 md:p-8"
-        >
-          <div className="flex items-center gap-3">
-            <Trophy className="text-racing-gold" size={22} />
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-racing-gold">
-              Ya confirmados
-            </span>
-          </div>
-          <div className="mt-4 grid gap-6 md:grid-cols-2">
-            {EVENT.confirmed.map((c) => (
-              <div key={c.name} className="flex items-start gap-4">
-                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-racing-red" />
-                <div>
-                  <p className="display text-2xl uppercase text-white">
-                    {c.name}
-                  </p>
-                  <p className="text-sm text-white/60">{c.note}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
     </section>
   );
