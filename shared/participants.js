@@ -36,15 +36,31 @@ export const CATEGORIES = {
     fee: 500,
     feeLabel: '$500 MXN',
     allowsCopilot: false,
+    requiresRaceClass: true,
     day: 'Domingo 27 de septiembre',
     tagline: 'Carrera de aceleración',
-    note: 'Solo el piloto puede subir al auto. No se permite copiloto.',
+    note: 'Durante las corridas solo puede ir el piloto en el auto. Tu acompañante puede entrar al evento contigo, pero no sube al vehículo cuando corras.',
     color: '#E10600',
     chart: '#E10600',
   },
 };
 
 export const CATEGORY_IDS = Object.keys(CATEGORIES);
+
+/**
+ * Clases dentro de arrancones (según flyer del evento). El id se guarda tal cual
+ * en la BD; el label es para mostrar en el formulario, panel y CSV.
+ */
+export const ARRANCONES_CLASSES = {
+  '4x4': { id: '4x4', label: '4x4' },
+  '4_cil': { id: '4_cil', label: '4 cilindros libre' },
+  '8_cil': { id: '8_cil', label: '8 cilindros libre' },
+  bracket: { id: 'bracket', label: 'Bracket' },
+};
+
+export const ARRANCONES_CLASS_IDS = Object.keys(ARRANCONES_CLASSES);
+
+export const raceClassLabel = (id) => ARRANCONES_CLASSES[id]?.label ?? id ?? '';
 
 export const STATUSES = {
   pendiente: { id: 'pendiente', label: 'Pendiente', color: '#F5B301' },
@@ -141,11 +157,27 @@ export function validateParticipant(input = {}, { partial = false } = {}) {
     const copilot = clean(input.copilot_name);
     const category = value.category ?? clean(input.category);
     if (copilot && CATEGORIES[category] && !CATEGORIES[category].allowsCopilot) {
-      errors.copilot_name = 'En arrancones solo puede subir el piloto.';
+      errors.copilot_name = 'En arrancones no se registra copiloto: durante las corridas solo puede ir el piloto en el auto.';
     } else if (copilot.length > 80) {
       errors.copilot_name = 'Máximo 80 caracteres.';
     } else {
       value.copilot_name = copilot || null;
+    }
+  }
+
+  if (has('race_class') || has('category')) {
+    const category = value.category ?? clean(input.category);
+    const requires = CATEGORIES[category]?.requiresRaceClass;
+    const raceClass = clean(input.race_class);
+    if (requires) {
+      if (!ARRANCONES_CLASSES[raceClass]) {
+        errors.race_class = 'Elige la categoría del arrancón (4x4, 4 cil, 8 cil o bracket).';
+      } else {
+        value.race_class = raceClass;
+      }
+    } else if (has('race_class')) {
+      // Fuera de arrancones no se guarda la clase.
+      value.race_class = null;
     }
   }
 

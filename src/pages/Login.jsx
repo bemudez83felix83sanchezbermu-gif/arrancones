@@ -82,7 +82,9 @@ export default function Login() {
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 className="mt-2 w-full border border-white/15 bg-[#0F0F0F] px-3 py-2.5 text-sm text-white placeholder-white/25 outline-none transition focus:border-racing-red focus:ring-1 focus:ring-racing-red/30"
-                placeholder="admin_esteban@gmail.com"
+                placeholder="Correo o usuario"
+                spellCheck={false}
+                autoCapitalize="off"
               />
             </label>
 

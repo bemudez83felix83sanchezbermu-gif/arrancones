@@ -55,7 +55,8 @@ export const EVENT = {
   contact: {
     whatsapp: '526383865268',
     whatsappDisplay: '+52 638 386 5268',
-    facebookEvent: 'https://www.facebook.com/events/1622648475955051/',
+    facebookEvent: 'https://www.facebook.com/events/2102109513678205/',
+    facebookPage: 'https://www.facebook.com/arrankonezlapista',
     instagram: 'https://www.instagram.com/arrancones_la_pista/',
     instagramHandle: '@arrancones_la_pista',
   },

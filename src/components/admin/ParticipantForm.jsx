@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { CATEGORIES, STATUSES, validateParticipant } from '../../../shared/participants';
+import {
+  ARRANCONES_CLASSES,
+  CATEGORIES,
+  STATUSES,
+  validateParticipant,
+} from '../../../shared/participants';
 import { ESTADOS, ESTADO_OTRO, municipiosDe } from '../../../shared/mexico';
 import { BUTTON, INPUT, Modal } from './ui';
 
 const blank = {
   category: 'car_show',
+  race_class: '',
   pilot_name: '',
   copilot_name: '',
   vehicle_name: '',
@@ -21,6 +27,7 @@ const fromParticipant = (participant) =>
   participant
     ? {
         category: participant.category,
+        race_class: participant.race_class ?? '',
         pilot_name: participant.pilot_name,
         copilot_name: participant.copilot_name ?? '',
         vehicle_name: participant.vehicle_name,
@@ -73,8 +80,14 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
   const set = (key) => (event) => {
     const { value } = event.target;
     setForm((prev) => {
-      if (key === 'category' && !CATEGORIES[value].allowsCopilot) {
-        return { ...prev, category: value, copilot_name: '' };
+      if (key === 'category') {
+        const next = CATEGORIES[value];
+        return {
+          ...prev,
+          category: value,
+          copilot_name: next.allowsCopilot ? prev.copilot_name : '',
+          race_class: next.requiresRaceClass ? prev.race_class : '',
+        };
       }
       // Cambiar de estado invalida el municipio elegido antes.
       if (key === 'state') return { ...prev, state: value, city: '' };
@@ -144,6 +157,19 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
           </div>
         </Field>
 
+        {category.requiresRaceClass && (
+          <Field label="Clase de arrancón" error={errors.race_class}>
+            <select className={INPUT} value={form.race_class} onChange={set('race_class')}>
+              <option value="">Elige la clase</option>
+              {Object.values(ARRANCONES_CLASSES).map((klass) => (
+                <option key={klass.id} value={klass.id}>
+                  {klass.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Piloto" error={errors.pilot_name}>
             <input className={INPUT} value={form.pilot_name} onChange={set('pilot_name')} />
@@ -163,7 +189,7 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
               value={form.copilot_name}
               onChange={set('copilot_name')}
               disabled={!category.allowsCopilot}
-              placeholder={category.allowsCopilot ? 'Sin copiloto' : 'No aplica en arrancones'}
+              placeholder={category.allowsCopilot ? 'Sin copiloto' : 'En arrancones no sube al auto durante las corridas'}
             />
           </Field>
           <Field label="Estatus" error={errors.status}>

@@ -25,6 +25,7 @@ export const EMPTY_FILTERS = {
   q: '',
   categories: [],
   statuses: [],
+  race_classes: [],
   state: '',
   city: '',
   copilot: 'todos', // todos | con | sin
@@ -37,6 +38,7 @@ export const hasActiveFilters = (f) =>
     f.q.trim() ||
       f.categories.length ||
       f.statuses.length ||
+      f.race_classes.length ||
       f.state ||
       f.city ||
       f.copilot !== 'todos' ||
@@ -57,6 +59,11 @@ export function filterParticipants(rows, filters) {
   return rows.filter((row) => {
     if (filters.categories.length && !filters.categories.includes(row.category)) return false;
     if (filters.statuses.length && !filters.statuses.includes(row.status)) return false;
+    if (
+      filters.race_classes.length &&
+      (row.category !== 'arrancones' || !filters.race_classes.includes(row.race_class))
+    )
+      return false;
     if (filters.state && row.state !== filters.state) return false;
     if (filters.city && normalize(row.city) !== normalize(filters.city)) return false;
     if (filters.copilot === 'con' && !row.copilot_name) return false;

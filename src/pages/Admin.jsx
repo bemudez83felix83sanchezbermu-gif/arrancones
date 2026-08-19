@@ -47,38 +47,40 @@ function AdminPanel({ admin, logout, tab, setTab }) {
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
       <header className="no-print sticky top-0 z-40 border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="display text-2xl uppercase tracking-wide text-white">
-                Panel de <span className="text-racing-red">participantes</span>
-              </span>
-            </div>
-            <p className="mt-0.5 text-xs uppercase tracking-[0.2em] text-white/35">
+        <div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-4 py-4 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-4 md:px-8">
+          <div className="min-w-0">
+            <span className="display block text-lg uppercase leading-tight tracking-wide text-white sm:text-2xl">
+              Panel de <span className="text-racing-red">participantes</span>
+            </span>
+            <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.2em] text-white/35 sm:text-xs">
               {EVENT.name} · {EVENT.displayDate}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:gap-3 md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
             {syncedAt && (
-              <span className="hidden text-xs text-white/35 sm:block">
+              <span className="hidden text-xs text-white/35 lg:block">
                 Actualizado{' '}
                 {syncedAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
             <button
               type="button"
-              className={BUTTON.ghost}
+              className={`${BUTTON.ghost} shrink-0`}
               onClick={() => refresh({ silent: true })}
               disabled={loading}
+              title="Actualizar"
             >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">Actualizar</span>
             </button>
-            <Link to="/registro" className={BUTTON.ghost}>
-              <ClipboardList size={15} /> Formulario
+            <Link to="/registro" className={`${BUTTON.ghost} shrink-0`} title="Formulario de registro">
+              <ClipboardList size={15} />
+              <span className="hidden sm:inline">Formulario</span>
             </Link>
-            <Link to="/" className={BUTTON.subtle}>
-              <ArrowLeft size={14} /> Sitio
+            <Link to="/" className={`${BUTTON.ghost} shrink-0`} title="Volver al sitio">
+              <ArrowLeft size={14} />
+              <span className="hidden sm:inline">Sitio</span>
             </Link>
             <div className="hidden h-6 w-px bg-white/10 md:block" aria-hidden="true" />
             {admin && (
@@ -88,25 +90,26 @@ function AdminPanel({ admin, logout, tab, setTab }) {
             )}
             <button
               type="button"
-              className={BUTTON.ghost}
+              className={`${BUTTON.ghost} shrink-0`}
               onClick={async () => {
                 await logout();
                 navigate('/login');
               }}
               title="Cerrar sesión"
             >
-              <LogOut size={15} /> Salir
+              <LogOut size={15} />
+              <span className="hidden sm:inline">Salir</span>
             </button>
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-[1400px] gap-1 px-4 md:px-8">
+        <nav className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:px-8 [&::-webkit-scrollbar]:hidden">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
+              className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition ${
                 tab === id
                   ? 'border-racing-red text-white'
                   : 'border-transparent text-white/45 hover:text-white'

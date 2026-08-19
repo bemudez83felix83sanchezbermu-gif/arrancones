@@ -236,9 +236,9 @@ export default function DomeGallery({
 
   const startInertia = useCallback(
     (vx, vy) => {
-      const MAX_V = 1.4;
-      let vX = clamp(vx, -MAX_V, MAX_V) * 80;
-      let vY = clamp(vy, -MAX_V, MAX_V) * 80;
+      const MAX_V = 2.4;
+      let vX = clamp(vx, -MAX_V, MAX_V) * 140;
+      let vY = clamp(vy, -MAX_V, MAX_V) * 140;
       let frames = 0;
       const d = clamp(dragDampening ?? 0.6, 0, 1);
       const frictionMul = 0.94 + 0.055 * d;
@@ -255,8 +255,8 @@ export default function DomeGallery({
           inertiaRAF.current = null;
           return;
         }
-        const nextX = clamp(rotationRef.current.x - vY / 200, -maxVerticalRotationDeg, maxVerticalRotationDeg);
-        const nextY = wrapAngleSigned(rotationRef.current.y + vX / 200);
+        const nextX = clamp(rotationRef.current.x - vY / 160, -maxVerticalRotationDeg, maxVerticalRotationDeg);
+        const nextY = wrapAngleSigned(rotationRef.current.y + vX / 160);
         rotationRef.current = { x: nextX, y: nextY };
         applyTransform(nextX, nextY);
         inertiaRAF.current = requestAnimationFrame(step);
@@ -305,8 +305,8 @@ export default function DomeGallery({
           let vy = vMagY * dirY;
           if (Math.abs(vx) < 0.001 && Math.abs(vy) < 0.001 && Array.isArray(movement)) {
             const [mx, my] = movement;
-            vx = clamp((mx / dragSensitivity) * 0.02, -1.2, 1.2);
-            vy = clamp((my / dragSensitivity) * 0.02, -1.2, 1.2);
+            vx = clamp((mx / dragSensitivity) * 0.035, -2, 2);
+            vy = clamp((my / dragSensitivity) * 0.035, -2, 2);
           }
           if (Math.abs(vx) > 0.005 || Math.abs(vy) > 0.005) startInertia(vx, vy);
           if (movedRef.current) lastDragEndAt.current = performance.now();

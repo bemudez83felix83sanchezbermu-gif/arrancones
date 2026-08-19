@@ -2,13 +2,19 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Loader2, AlertCircle, Info } from 'lucide-react';
 import { EVENT } from '../data/event';
-import { CATEGORIES, validateParticipant } from '../../shared/participants';
+import {
+  ARRANCONES_CLASSES,
+  CATEGORIES,
+  raceClassLabel,
+  validateParticipant,
+} from '../../shared/participants';
 import { ESTADOS, ESTADO_OTRO, municipiosDe } from '../../shared/mexico';
 import { createParticipant } from '../lib/api';
 import { Link } from '../router';
 
 const EMPTY = {
   category: '',
+  race_class: '',
   pilot_name: '',
   copilot_name: '',
   vehicle_name: '',
@@ -74,8 +80,19 @@ export default function Register() {
       ...prev,
       category: id,
       copilot_name: CATEGORIES[id].allowsCopilot ? prev.copilot_name : '',
+      race_class: CATEGORIES[id].requiresRaceClass ? prev.race_class : '',
     }));
-    setErrors((prev) => ({ ...prev, category: undefined, copilot_name: undefined }));
+    setErrors((prev) => ({
+      ...prev,
+      category: undefined,
+      copilot_name: undefined,
+      race_class: undefined,
+    }));
+  };
+
+  const pickRaceClass = (id) => {
+    setForm((prev) => ({ ...prev, race_class: id }));
+    setErrors((prev) => (prev.race_class ? { ...prev, race_class: undefined } : prev));
   };
 
   const submit = async (event) => {
@@ -106,8 +123,9 @@ export default function Register() {
   const summary = useMemo(() => {
     if (!category) return null;
     const withCopilot = category.allowsCopilot && form.copilot_name.trim().length > 0;
-    return { category, withCopilot };
-  }, [category, form.copilot_name]);
+    const raceClass = category.requiresRaceClass ? raceClassLabel(form.race_class) : '';
+    return { category, withCopilot, raceClass };
+  }, [category, form.copilot_name, form.race_class]);
 
   if (done) {
     const registerAnother = () => {
@@ -139,6 +157,7 @@ export default function Register() {
               ['Copiloto', done.copilot_name || 'Sin copiloto'],
               ['Vehículo', done.vehicle_name],
               ['Categoría', CATEGORIES[done.category].label],
+              ...(done.race_class ? [['Clase', raceClassLabel(done.race_class)]] : []),
               ['Cuota', CATEGORIES[done.category].feeLabel],
               ['Día', CATEGORIES[done.category].day],
             ].map(([label, value]) => (
@@ -233,6 +252,44 @@ export default function Register() {
               {category.note}
             </p>
           )}
+
+          {category?.requiresRaceClass && (
+            <div className="mt-5">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+                Categoría del arrancón
+              </span>
+              <p className="mt-1 text-xs text-white/40">
+                Elige en qué corrida vas a competir.
+              </p>
+              <div
+                data-invalid={errors.race_class ? 'true' : undefined}
+                className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+              >
+                {Object.values(ARRANCONES_CLASSES).map((klass) => {
+                  const active = form.race_class === klass.id;
+                  return (
+                    <button
+                      type="button"
+                      key={klass.id}
+                      onClick={() => pickRaceClass(klass.id)}
+                      className={`border px-4 py-3 text-left text-sm font-medium transition ${
+                        active
+                          ? 'border-racing-red bg-racing-red/10 text-white'
+                          : 'border-white/12 bg-racing-smoke text-white/70 hover:border-white/30 hover:text-white'
+                      }`}
+                    >
+                      {klass.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {errors.race_class && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-racing-red">
+                  <AlertCircle size={13} /> {errors.race_class}
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
         <section>
@@ -268,7 +325,7 @@ export default function Register() {
               {category && !category.allowsCopilot ? (
                 <div className="flex items-start gap-2 border border-white/10 bg-white/[0.02] p-4 text-sm text-white/50">
                   <Info size={16} className="mt-0.5 shrink-0 text-racing-red" />
-                  En arrancones no se registra copiloto: solo el piloto puede subir al auto.
+                  En arrancones no se registra copiloto: durante las corridas solo el piloto sube al auto. Tu acompañante sí puede ir contigo al evento.
                 </div>
               ) : (
                 <Field
@@ -384,7 +441,9 @@ export default function Register() {
                 Resumen de tu inscripción
               </span>
               <p className="mt-1 text-white">
-                {summary.category.label} · {summary.withCopilot ? 'Piloto y copiloto' : 'Solo piloto'}
+                {summary.category.label}
+                {summary.raceClass ? ` · ${summary.raceClass}` : ''} ·{' '}
+                {summary.withCopilot ? 'Piloto y copiloto' : 'Solo piloto'}
               </p>
             </div>
             <div className="text-right">

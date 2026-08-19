@@ -30,11 +30,32 @@ await sql`
 // Para bases creadas antes de que existiera el selector de estado.
 await sql`alter table participants add column if not exists state text`;
 
+// Subcategoría de arrancones (4x4, 4 cil libre, 8 cil libre, bracket).
+// Se agrega en caliente para bases anteriores; el CHECK se maneja aparte
+// para que quede una sola vez sin depender de "if not exists".
+await sql`alter table participants add column if not exists race_class text`;
+await sql`
+  do $$
+  begin
+    if not exists (
+      select 1 from pg_constraint where conname = 'participants_race_class_valida'
+    ) then
+      alter table participants add constraint participants_race_class_valida
+        check (
+          (category = 'arrancones' and race_class in ('4x4','4_cil','8_cil','bracket'))
+          or (category <> 'arrancones' and race_class is null)
+        );
+    end if;
+  end
+  $$;
+`;
+
 await sql`create index if not exists participants_category_idx on participants (category)`;
 await sql`create index if not exists participants_status_idx   on participants (status)`;
 await sql`create index if not exists participants_created_idx  on participants (created_at desc)`;
 await sql`create index if not exists participants_city_idx     on participants (lower(city))`;
 await sql`create index if not exists participants_state_idx     on participants (state)`;
+await sql`create index if not exists participants_race_class_idx on participants (race_class)`;
 
 await sql`
   create table if not exists admins (

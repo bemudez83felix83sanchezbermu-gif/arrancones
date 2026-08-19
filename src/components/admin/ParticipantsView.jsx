@@ -4,8 +4,9 @@ import {
   ArrowUp,
   ChevronLeft,
   ChevronRight,
-  Download,
   Eye,
+  FileSpreadsheet,
+  FileText,
   MessageCircle,
   Pencil,
   Plus,
@@ -16,11 +17,13 @@ import {
   X,
 } from 'lucide-react';
 import {
+  ARRANCONES_CLASSES,
   CATEGORIES,
   STATUSES,
   folio,
   formatMoney,
   formatPhone,
+  raceClassLabel,
   socialLabel,
   socialLink,
 } from '../../../shared/participants';
@@ -35,7 +38,7 @@ import {
   uniqueCities,
   uniqueStates,
 } from '../../lib/adminData';
-import { downloadCsv } from '../../lib/csv';
+import { downloadExcel, downloadPdf } from '../../lib/exports';
 import ParticipantForm from './ParticipantForm';
 import {
   BUTTON,
@@ -91,6 +94,21 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
   const [editing, setEditing] = useState(undefined); // undefined = cerrado, null = alta nueva
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(null); // 'excel' | 'pdf' | null
+
+  const runExport = async (kind, rowsToExport, name) => {
+    if (!rowsToExport.length) return;
+    setExporting(kind);
+    try {
+      const handler = kind === 'excel' ? downloadExcel : downloadPdf;
+      await handler(rowsToExport, name);
+    } catch (error) {
+      console.error(`No se pudo exportar como ${kind}`, error);
+      alert(`No se pudo generar el archivo ${kind === 'excel' ? 'Excel' : 'PDF'}.`);
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const states = useMemo(() => uniqueStates(participants), [participants]);
   const cities = useMemo(
@@ -209,10 +227,20 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
           <button
             type="button"
             className={BUTTON.ghost}
-            onClick={() => downloadCsv(filtered, 'participantes-carfest')}
-            disabled={!filtered.length}
+            onClick={() => runExport('excel', filtered, 'participantes-carfest')}
+            disabled={!filtered.length || Boolean(exporting)}
+            title="Descargar como archivo Excel (.xlsx)"
           >
-            <Download size={16} /> Exportar CSV
+            <FileSpreadsheet size={16} /> {exporting === 'excel' ? 'Generando…' : 'Excel'}
+          </button>
+          <button
+            type="button"
+            className={BUTTON.ghost}
+            onClick={() => runExport('pdf', filtered, 'participantes-carfest')}
+            disabled={!filtered.length || Boolean(exporting)}
+            title="Descargar como archivo PDF"
+          >
+            <FileText size={16} /> {exporting === 'pdf' ? 'Generando…' : 'PDF'}
           </button>
           <button type="button" className={BUTTON.primary} onClick={() => setEditing(null)}>
             <Plus size={16} /> Agregar
@@ -246,6 +274,21 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
                   onClick={() => toggleInArray('statuses', status.id)}
                 >
                   {status.label}
+                </Chip>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-xs uppercase tracking-[0.18em] text-white/35">
+                Clase arrancones
+              </span>
+              {Object.values(ARRANCONES_CLASSES).map((klass) => (
+                <Chip
+                  key={klass.id}
+                  active={filters.race_classes.includes(klass.id)}
+                  onClick={() => toggleInArray('race_classes', klass.id)}
+                >
+                  {klass.label}
                 </Chip>
               ))}
             </div>
@@ -364,14 +407,30 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
               <button
                 type="button"
                 className={BUTTON.subtle}
+                disabled={Boolean(exporting)}
                 onClick={() =>
-                  downloadCsv(
+                  runExport(
+                    'excel',
                     filtered.filter((row) => selected.includes(row.id)),
                     'seleccion-carfest',
                   )
                 }
               >
-                <Download size={14} /> Exportar
+                <FileSpreadsheet size={14} /> Excel
+              </button>
+              <button
+                type="button"
+                className={BUTTON.subtle}
+                disabled={Boolean(exporting)}
+                onClick={() =>
+                  runExport(
+                    'pdf',
+                    filtered.filter((row) => selected.includes(row.id)),
+                    'seleccion-carfest',
+                  )
+                }
+              >
+                <FileText size={14} /> PDF
               </button>
               <button
                 type="button"
@@ -498,6 +557,11 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
                       <td className="px-3 py-3 text-white/80">{row.vehicle_name}</td>
                       <td className="px-3 py-3">
                         <CategoryBadge id={row.category} />
+                        {row.race_class && (
+                          <span className="mt-1 block text-[11px] uppercase tracking-wider text-white/45">
+                            {raceClassLabel(row.race_class)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-3">
                         <span className="text-white/80">{row.city}</span>
@@ -620,6 +684,9 @@ export default function ParticipantsView({ participants, loading, onCreate, onUp
                 ['Vehículo', detail.vehicle_name],
                 ['Copiloto', detail.copilot_name || 'Sin copiloto'],
                 ['Categoría', CATEGORIES[detail.category].label],
+                ...(detail.race_class
+                  ? [['Clase', raceClassLabel(detail.race_class)]]
+                  : []),
                 ['Cuota', CATEGORIES[detail.category].feeLabel],
                 ['Día', CATEGORIES[detail.category].day],
                 ['Estado', detail.state || '—'],

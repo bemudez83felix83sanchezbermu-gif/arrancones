@@ -27,6 +27,7 @@ export default withErrors(async (req, res) => {
       state: body.state,
       city: body.city,
       social: body.social ?? '',
+      race_class: body.race_class ?? '',
     });
     if (!ok) return json(res, 422, { error: 'Revisa los datos del formulario', errors });
 
@@ -45,10 +46,10 @@ export default withErrors(async (req, res) => {
 
     const [participant] = await sql`
       insert into participants
-        (pilot_name, copilot_name, category, vehicle_name, phone, state, city, social, status)
+        (pilot_name, copilot_name, category, race_class, vehicle_name, phone, state, city, social, status)
       values
-        (${value.pilot_name}, ${value.copilot_name}, ${value.category}, ${value.vehicle_name},
-         ${value.phone}, ${value.state}, ${value.city}, ${value.social}, 'pendiente')
+        (${value.pilot_name}, ${value.copilot_name}, ${value.category}, ${value.race_class ?? null},
+         ${value.vehicle_name}, ${value.phone}, ${value.state}, ${value.city}, ${value.social}, 'pendiente')
       returning *
     `;
     return json(res, 201, { participant: asParticipant(participant) });

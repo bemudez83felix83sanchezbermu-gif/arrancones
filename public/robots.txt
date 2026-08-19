@@ -1,0 +1,10 @@
+# robots.txt para Car Fest 2K26
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+Sitemap: https://carfestrp2026.vercel.app/sitemap.xml

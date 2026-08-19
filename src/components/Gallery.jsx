@@ -26,14 +26,15 @@ export default function Gallery() {
         </motion.div>
       </div>
 
-      <div className="relative h-[560px] w-full md:h-[640px]">
+      <div className="relative h-[520px] w-full sm:h-[560px] md:h-[640px]">
         <DomeGallery
           images={GALLERY_IMAGES}
-          fit={0.8}
-          minRadius={420}
+          fit={0.82}
+          minRadius={360}
           maxVerticalRotationDeg={12}
           segments={18}
-          dragDampening={2.5}
+          dragSensitivity={9}
+          dragDampening={0.85}
           overlayBlurColor="#1A1A1A"
           grayscale={false}
           openedImageWidth="min(80vw, 420px)"
