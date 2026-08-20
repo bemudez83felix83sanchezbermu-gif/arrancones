@@ -26,6 +26,9 @@ const request = async (url, options = {}) => {
 export const listParticipants = () =>
   request('/api/participants').then((data) => data.participants ?? []);
 
+export const listPublicParticipants = () =>
+  request('/api/participants/public').then((data) => data.participants ?? []);
+
 export const createParticipant = (body) =>
   request('/api/participants', { method: 'POST', body }).then((data) => data.participant);
 

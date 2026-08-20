@@ -8,6 +8,7 @@ import {
 } from '../../../shared/participants';
 import { ESTADOS, ESTADO_OTRO, municipiosDe } from '../../../shared/mexico';
 import { BUTTON, INPUT, Modal } from './ui';
+import PhotoUploader from '../PhotoUploader';
 
 const blank = {
   category: 'car_show',
@@ -21,6 +22,7 @@ const blank = {
   social: '',
   status: 'pendiente',
   notes: '',
+  vehicle_photo: null,
 };
 
 const fromParticipant = (participant) =>
@@ -37,6 +39,7 @@ const fromParticipant = (participant) =>
         social: participant.social ?? '',
         status: participant.status,
         notes: participant.notes ?? '',
+        vehicle_photo: participant.vehicle_photo ?? null,
       }
     : blank;
 
@@ -260,6 +263,18 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
               placeholder="Acuerdos, pendientes, número asignado…"
             />
           </Field>
+
+          <div className="sm:col-span-2">
+            <PhotoUploader
+              label="Foto del vehículo"
+              value={form.vehicle_photo}
+              error={errors.vehicle_photo}
+              onChange={(dataUrl) => {
+                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl }));
+                setErrors((prev) => ({ ...prev, vehicle_photo: undefined }));
+              }}
+            />
+          </div>
         </div>
 
         {serverError && (

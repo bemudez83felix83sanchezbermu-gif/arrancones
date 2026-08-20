@@ -17,18 +17,24 @@ export default withErrors(async (req, res) => {
 
   if (req.method === 'POST') {
     const body = await readBody(req);
-    // El estado nunca lo decide el formulario público.
-    const { ok, errors, value } = validateParticipant({
-      category: body.category,
-      pilot_name: body.pilot_name,
-      copilot_name: body.copilot_name ?? '',
-      vehicle_name: body.vehicle_name,
-      phone: body.phone,
-      state: body.state,
-      city: body.city,
-      social: body.social ?? '',
-      race_class: body.race_class ?? '',
-    });
+    // Cuando quien crea es el admin (alta manual desde el panel) no se exige
+    // foto: puede subirla después. En el registro público sí es obligatoria.
+    const admin = await getCurrentAdmin(req);
+    const { ok, errors, value } = validateParticipant(
+      {
+        category: body.category,
+        pilot_name: body.pilot_name,
+        copilot_name: body.copilot_name ?? '',
+        vehicle_name: body.vehicle_name,
+        phone: body.phone,
+        state: body.state,
+        city: body.city,
+        social: body.social ?? '',
+        race_class: body.race_class ?? '',
+        vehicle_photo: body.vehicle_photo ?? '',
+      },
+      { requirePhoto: !admin },
+    );
     if (!ok) return json(res, 422, { error: 'Revisa los datos del formulario', errors });
 
     const [duplicate] = await sql`
@@ -46,10 +52,11 @@ export default withErrors(async (req, res) => {
 
     const [participant] = await sql`
       insert into participants
-        (pilot_name, copilot_name, category, race_class, vehicle_name, phone, state, city, social, status)
+        (pilot_name, copilot_name, category, race_class, vehicle_name, phone, state, city, social, status, vehicle_photo)
       values
         (${value.pilot_name}, ${value.copilot_name}, ${value.category}, ${value.race_class ?? null},
-         ${value.vehicle_name}, ${value.phone}, ${value.state}, ${value.city}, ${value.social}, 'pendiente')
+         ${value.vehicle_name}, ${value.phone}, ${value.state}, ${value.city}, ${value.social}, 'pendiente',
+         ${value.vehicle_photo ?? null})
       returning *
     `;
     return json(res, 201, { participant: asParticipant(participant) });

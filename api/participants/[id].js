@@ -14,6 +14,7 @@ const EDITABLE = [
   'social',
   'status',
   'notes',
+  'vehicle_photo',
 ];
 
 export default withErrors(async (req, res) => {
@@ -43,18 +44,19 @@ export default withErrors(async (req, res) => {
 
     const [participant] = await sql`
       update participants set
-        pilot_name   = ${value.pilot_name},
-        copilot_name = ${value.copilot_name},
-        category     = ${value.category},
-        race_class   = ${value.race_class ?? null},
-        vehicle_name = ${value.vehicle_name},
-        phone        = ${value.phone},
-        state        = ${value.state},
-        city         = ${value.city},
-        social       = ${value.social},
-        status       = ${value.status},
-        notes        = ${value.notes},
-        updated_at   = now()
+        pilot_name    = ${value.pilot_name},
+        copilot_name  = ${value.copilot_name},
+        category      = ${value.category},
+        race_class    = ${value.race_class ?? null},
+        vehicle_name  = ${value.vehicle_name},
+        phone         = ${value.phone},
+        state         = ${value.state},
+        city          = ${value.city},
+        social        = ${value.social},
+        status        = ${value.status},
+        notes         = ${value.notes},
+        vehicle_photo = ${value.vehicle_photo ?? current.vehicle_photo ?? null},
+        updated_at    = now()
       where id = ${id}
       returning *
     `;

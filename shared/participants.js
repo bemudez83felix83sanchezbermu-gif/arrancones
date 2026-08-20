@@ -122,11 +122,38 @@ export const socialLink = (value) => (isLink(value) ? value : null);
 export const socialLabel = (value) =>
   (value ?? '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
 
+/** Peso máximo aceptado para la foto del vehículo (aprox., ya en base64). */
+export const VEHICLE_PHOTO_MAX_KB = 900;
+
+/**
+ * Valida el data URL de la foto. Regresa `{ ok, error, value }`.
+ * `requireValue = true` cuando el formulario público no debe permitir enviar sin foto.
+ */
+export function validateVehiclePhoto(input, { requireValue = false } = {}) {
+  const value = typeof input === 'string' ? input.trim() : '';
+  if (!value) {
+    if (requireValue) return { ok: false, error: 'Sube una foto de tu vehículo.' };
+    return { ok: true, value: null };
+  }
+  if (!/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value)) {
+    return { ok: false, error: 'La foto debe convertirse a WebP antes de enviarse.' };
+  }
+  // 1 char de base64 ~ 0.75 bytes; se compara contra el máximo en KB.
+  const approxBytes = Math.floor((value.length - 'data:image/webp;base64,'.length) * 0.75);
+  if (approxBytes > VEHICLE_PHOTO_MAX_KB * 1024) {
+    return {
+      ok: false,
+      error: `La foto pesa demasiado (>${VEHICLE_PHOTO_MAX_KB} KB). Súbela más chica.`,
+    };
+  }
+  return { ok: true, value };
+}
+
 /**
  * Valida y normaliza lo que llega del formulario.
  * Devuelve { errors, value }: errors es un objeto campo -> mensaje.
  */
-export function validateParticipant(input = {}, { partial = false } = {}) {
+export function validateParticipant(input = {}, { partial = false, requirePhoto = false } = {}) {
   const errors = {};
   const value = {};
   const has = (k) => !partial || input[k] !== undefined;
@@ -207,6 +234,12 @@ export function validateParticipant(input = {}, { partial = false } = {}) {
     else if (social.length > 200) errors.social = 'Máximo 200 caracteres.';
     else if (isLink(social) && !isValidUrl(social)) errors.social = 'Ese enlace no es válido.';
     else value.social = social;
+  }
+
+  if (has('vehicle_photo') || requirePhoto) {
+    const check = validateVehiclePhoto(input.vehicle_photo, { requireValue: requirePhoto });
+    if (!check.ok) errors.vehicle_photo = check.error;
+    else if (check.value !== undefined) value.vehicle_photo = check.value;
   }
 
   if (sent('status')) {

@@ -11,6 +11,7 @@ import {
 import { ESTADOS, ESTADO_OTRO, municipiosDe } from '../../shared/mexico';
 import { createParticipant } from '../lib/api';
 import { Link } from '../router';
+import PhotoUploader from '../components/PhotoUploader';
 
 const EMPTY = {
   category: '',
@@ -22,6 +23,7 @@ const EMPTY = {
   state: '',
   city: '',
   social: '',
+  vehicle_photo: null,
 };
 
 function Field({ label, hint, error, optional, children }) {
@@ -98,7 +100,7 @@ export default function Register() {
   const submit = async (event) => {
     event.preventDefault();
     setServerError('');
-    const { ok, errors: found } = validateParticipant(form);
+    const { ok, errors: found } = validateParticipant(form, { requirePhoto: true });
     if (!ok) {
       setErrors(found);
       document.querySelector('[data-invalid="true"]')?.scrollIntoView({
@@ -431,6 +433,25 @@ export default function Register() {
                 />
               </Field>
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="display text-2xl uppercase text-white">4 · Foto del vehículo</h2>
+          <p className="mt-2 text-sm text-white/50">
+            Sube una buena foto de tu auto: se optimiza en tu dispositivo antes de enviarse.
+          </p>
+          <div className="mt-4">
+            <PhotoUploader
+              value={form.vehicle_photo}
+              error={errors.vehicle_photo}
+              onChange={(dataUrl) => {
+                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl }));
+                setErrors((prev) =>
+                  prev.vehicle_photo ? { ...prev, vehicle_photo: undefined } : prev,
+                );
+              }}
+            />
           </div>
         </section>
 

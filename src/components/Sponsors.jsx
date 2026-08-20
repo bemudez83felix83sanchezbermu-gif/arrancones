@@ -10,6 +10,9 @@ const GALLERY_ITEMS = [
   { image: '/sponsors/zepedas_slrc_fondo.webp', text: "Zepeda's" },
   { image: '/sponsors/juguetes_leon_fondo.webp', text: 'Vnts Leon' },
   { image: '/sponsors/wero_carwash_fondo.webp', text: "Wero's Car Wash" },
+  { image: '/sponsors/dmentes_fondo.webp', text: 'Dmentes Drifts' },
+  { image: '/sponsors/droid_fondo.webp', text: 'Droid' },
+  { image: '/sponsors/rubios_fondo.webp', text: "Rubio's" },
 ];
 
 const LOOP_LOGOS = [
@@ -17,12 +20,34 @@ const LOOP_LOGOS = [
   { src: '/sponsors_s_fondo/zepedas_slrc.webp', alt: "Zepeda's", title: "Zepeda's" },
   { src: '/sponsors_s_fondo/juguetes_leon.webp', alt: 'Vnts Leon', title: 'Vnts Leon' },
   { src: '/sponsors_s_fondo/wero_carwash.webp', alt: "Wero's Car Wash", title: "Wero's Car Wash" },
+  { src: '/sponsors_s_fondo/dmentes_drifts.webp', alt: 'Dmentes Drifts', title: 'Dmentes Drifts' },
+  { src: '/sponsors_s_fondo/droid_s_fondo.webp', alt: 'Droid', title: 'Droid' },
+  { src: '/sponsors_s_fondo/rubios_s_fondo.webp', alt: "Rubio's", title: "Rubio's" },
 ];
 
 const LOOP_BG = '#F5F5F5';
 
+function useIsMobile(query = '(max-width: 767px)') {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mql = window.matchMedia(query);
+    const onChange = (event) => setIsMobile(event.matches);
+    mql.addEventListener('change', onChange);
+    setIsMobile(mql.matches);
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
+
+  return isMobile;
+}
+
 export default function Sponsors() {
   const [preview, setPreview] = useState(null);
+  const isMobile = useIsMobile();
   const close = useCallback(() => setPreview(null), []);
 
   useEffect(() => {
@@ -64,7 +89,7 @@ export default function Sponsors() {
         </motion.div>
       </div>
 
-      <div className="relative mt-10 h-[420px] w-full md:h-[560px]">
+      <div className="relative mt-10 h-[340px] w-full sm:h-[420px] md:h-[560px]">
         <Suspense
           fallback={
             <div className="flex h-full items-center justify-center">
@@ -74,13 +99,13 @@ export default function Sponsors() {
         >
           <CircularGallery
             items={GALLERY_ITEMS}
-            bend={2.5}
+            bend={isMobile ? 0.8 : 2.5}
             textColor="#ffffff"
             borderRadius={0.06}
             scrollEase={0.09}
-            scrollSpeed={3.6}
+            scrollSpeed={isMobile ? 2.4 : 3.6}
             fontUrl="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap"
-            font="bold 26px Orbitron"
+            font={isMobile ? 'bold 20px Orbitron' : 'bold 26px Orbitron'}
             onItemClick={setPreview}
           />
         </Suspense>
