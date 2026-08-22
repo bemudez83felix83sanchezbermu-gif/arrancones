@@ -1,14 +1,24 @@
 import { useRef, useState } from 'react';
 import { AlertCircle, Camera, Loader2, RotateCcw } from 'lucide-react';
-import { imageToWebp } from '../lib/imageToWebp';
+import { optimizeImage } from '../lib/optimizeImage';
 
 /**
- * Uploader que convierte cualquier imagen a WebP en el navegador y expone
- * un data URL. Se usa igual en el formulario público y en el panel.
+ * Uploader que optimiza cualquier imagen en el navegador (WebP, o JPEG donde
+ * el navegador no sabe codificar WebP) y expone un data URL. Se usa igual en
+ * el formulario público y en el panel.
  *
- * Props: value (data URL o null), onChange(dataUrl|null), error, disabled.
+ * Props: value (data URL o null), onChange(dataUrl|null), onFail(bool) para
+ * avisar al formulario que la foto no se pudo preparar, error, disabled.
  */
-export default function PhotoUploader({ value, onChange, error, disabled, label = 'Foto del vehículo' }) {
+export default function PhotoUploader({
+  value,
+  onChange,
+  onFail,
+  error,
+  disabled,
+  label = 'Foto del vehículo',
+  hint = 'La foto aparece en la sección de competidores confirmados del sitio.',
+}) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -23,11 +33,13 @@ export default function PhotoUploader({ value, onChange, error, disabled, label 
     setLocalError('');
     setBusy(true);
     try {
-      const result = await imageToWebp(file);
+      const result = await optimizeImage(file);
       setMeta({ sizeKb: result.sizeKb, width: result.width, height: result.height });
       onChange(result.dataUrl);
+      onFail?.(false);
     } catch (err) {
-      setLocalError(err.message ?? 'No se pudo procesar la imagen.');
+      setLocalError(err.message ?? 'No pudimos preparar esta foto. Intenta con otra.');
+      onFail?.(true);
     } finally {
       setBusy(false);
     }
@@ -37,6 +49,7 @@ export default function PhotoUploader({ value, onChange, error, disabled, label 
     setMeta(null);
     setLocalError('');
     onChange(null);
+    onFail?.(false);
   };
 
   const combinedError = localError || error;
@@ -61,7 +74,7 @@ export default function PhotoUploader({ value, onChange, error, disabled, label 
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
         onChange={handleFile}
         disabled={disabled || busy}
         className="hidden"
@@ -107,13 +120,13 @@ export default function PhotoUploader({ value, onChange, error, disabled, label 
           {busy ? (
             <>
               <Loader2 size={22} className="animate-spin text-racing-red" />
-              <span>Convirtiendo a WebP…</span>
+              <span>Optimizando foto…</span>
             </>
           ) : (
             <>
               <Camera size={26} />
               <span className="font-medium">Sube la foto de tu vehículo</span>
-              <span className="text-[11px] text-white/40">JPG, PNG o WebP · se convierte y optimiza automáticamente</span>
+              <span className="text-[11px] text-white/40">Se ajusta sola para que pese poco</span>
             </>
           )}
         </button>
@@ -124,9 +137,7 @@ export default function PhotoUploader({ value, onChange, error, disabled, label 
           <AlertCircle size={13} /> {combinedError}
         </p>
       ) : (
-        <p className="mt-1.5 text-xs text-white/40">
-          La foto aparece en la sección de competidores confirmados del sitio.
-        </p>
+        <p className="mt-1.5 text-xs text-white/40">{hint}</p>
       )}
     </div>
   );

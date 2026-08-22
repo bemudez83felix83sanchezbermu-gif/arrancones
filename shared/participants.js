@@ -135,11 +135,13 @@ export function validateVehiclePhoto(input, { requireValue = false } = {}) {
     if (requireValue) return { ok: false, error: 'Sube una foto de tu vehículo.' };
     return { ok: true, value: null };
   }
-  if (!/^data:image\/webp;base64,[A-Za-z0-9+/=]+$/.test(value)) {
-    return { ok: false, error: 'La foto debe convertirse a WebP antes de enviarse.' };
+  const match = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.exec(value);
+  if (!match) {
+    return { ok: false, error: 'No pudimos procesar esta foto. Intenta con otra.' };
   }
   // 1 char de base64 ~ 0.75 bytes; se compara contra el máximo en KB.
-  const approxBytes = Math.floor((value.length - 'data:image/webp;base64,'.length) * 0.75);
+  const prefixLength = `data:image/${match[1]};base64,`.length;
+  const approxBytes = Math.floor((value.length - prefixLength) * 0.75);
   if (approxBytes > VEHICLE_PHOTO_MAX_KB * 1024) {
     return {
       ok: false,

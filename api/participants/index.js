@@ -17,9 +17,9 @@ export default withErrors(async (req, res) => {
 
   if (req.method === 'POST') {
     const body = await readBody(req);
-    // Cuando quien crea es el admin (alta manual desde el panel) no se exige
-    // foto: puede subirla después. En el registro público sí es obligatoria.
-    const admin = await getCurrentAdmin(req);
+    // La foto se pide en el formulario, pero no se exige aquí: si falla en el
+    // dispositivo del usuario (navegadores viejos, webviews de apps), el
+    // registro entra sin ella y se pide después. Si viene, sí se valida.
     const { ok, errors, value } = validateParticipant(
       {
         category: body.category,
@@ -33,7 +33,7 @@ export default withErrors(async (req, res) => {
         race_class: body.race_class ?? '',
         vehicle_photo: body.vehicle_photo ?? '',
       },
-      { requirePhoto: !admin },
+      { requirePhoto: false },
     );
     if (!ok) return json(res, 422, { error: 'Revisa los datos del formulario', errors });
 

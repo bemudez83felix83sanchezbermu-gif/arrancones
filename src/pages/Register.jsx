@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Check, Loader2, AlertCircle, Info } from 'lucide-react';
-import { EVENT } from '../data/event';
+import { EVENT, WHATSAPP_URL } from '../data/event';
 import {
   ARRANCONES_CLASSES,
   CATEGORIES,
@@ -58,6 +58,9 @@ export default function Register() {
   const [serverError, setServerError] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(null);
+  // Si la foto falla en el dispositivo del usuario, el registro debe poder
+  // enviarse igual: la pedimos después por WhatsApp.
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const category = CATEGORIES[form.category];
 
@@ -100,7 +103,7 @@ export default function Register() {
   const submit = async (event) => {
     event.preventDefault();
     setServerError('');
-    const { ok, errors: found } = validateParticipant(form, { requirePhoto: true });
+    const { ok, errors: found } = validateParticipant(form, { requirePhoto: !photoFailed });
     if (!ok) {
       setErrors(found);
       document.querySelector('[data-invalid="true"]')?.scrollIntoView({
@@ -134,6 +137,7 @@ export default function Register() {
       setDone(null);
       setForm(EMPTY);
       setErrors({});
+      setPhotoFailed(false);
       window.scrollTo({ top: 0 });
     };
 
@@ -169,6 +173,23 @@ export default function Register() {
               </div>
             ))}
           </dl>
+
+          {!done.vehicle_photo && (
+            <p className="mt-6 border border-white/10 bg-racing-asphalt px-4 py-3 text-left text-sm text-white/60">
+              Tu registro quedó sin foto del vehículo.{' '}
+              <a
+                href={WHATSAPP_URL(
+                  `Hola, soy ${done.pilot_name}. Ya me registré con ${done.vehicle_name} y les mando la foto de mi vehículo.`,
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="text-racing-red underline underline-offset-4"
+              >
+                Mándanosla por WhatsApp
+              </a>{' '}
+              para que aparezcas en la sección de competidores.
+            </p>
+          )}
 
           <button type="button" onClick={registerAnother} className="btn-racing mt-8 w-full">
             Registrar otro vehículo
@@ -439,12 +460,13 @@ export default function Register() {
         <section>
           <h2 className="display text-2xl uppercase text-white">4 · Foto del vehículo</h2>
           <p className="mt-2 text-sm text-white/50">
-            Sube una buena foto de tu auto: se optimiza en tu dispositivo antes de enviarse.
+            Sube una buena foto de tu auto. Se ajusta sola en tu dispositivo antes de enviarse.
           </p>
           <div className="mt-4">
             <PhotoUploader
               value={form.vehicle_photo}
               error={errors.vehicle_photo}
+              onFail={setPhotoFailed}
               onChange={(dataUrl) => {
                 setForm((prev) => ({ ...prev, vehicle_photo: dataUrl }));
                 setErrors((prev) =>
@@ -453,6 +475,15 @@ export default function Register() {
               }}
             />
           </div>
+          {photoFailed && (
+            <p className="mt-3 flex items-start gap-2 border border-white/10 bg-racing-asphalt px-4 py-3 text-sm text-white/60">
+              <Info size={15} className="mt-0.5 shrink-0 text-white/40" />
+              <span>
+                Si la foto sigue sin funcionar, puedes enviar tu registro sin ella y nos la mandas
+                después por WhatsApp.
+              </span>
+            </p>
+          )}
         </section>
 
         {summary && (
