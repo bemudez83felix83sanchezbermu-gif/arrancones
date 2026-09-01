@@ -10,6 +10,7 @@ import Sponsors from '../components/Sponsors';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
 import WhatsAppFloat from '../components/WhatsAppFloat';
+import WelcomeModal from '../components/WelcomeModal';
 
 export default function Landing() {
   return (
@@ -28,6 +29,7 @@ export default function Landing() {
       </main>
       <Footer />
       <WhatsAppFloat />
+      <WelcomeModal />
     </>
   );
 }

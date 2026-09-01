@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardList, Menu, X } from 'lucide-react';
+import { BedDouble, ClipboardList, Menu, X } from 'lucide-react';
 import { Link } from '../router';
 
 const links = [
@@ -61,6 +61,13 @@ export default function Navbar() {
           ))}
 
           <Link
+            to="/hospedaje"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-racing-gold transition hover:brightness-110"
+          >
+            <BedDouble size={15} /> Hospedaje
+          </Link>
+
+          <Link
             to="/registro"
             className="inline-flex items-center gap-2 bg-racing-red px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
             style={{ clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)' }}
@@ -106,9 +113,17 @@ export default function Navbar() {
             ))}
 
             <Link
+              to="/hospedaje"
+              onClick={() => setOpen(false)}
+              className="mt-4 flex items-center justify-center gap-2 rounded-full border border-racing-gold/50 py-3 text-sm font-bold uppercase tracking-wider text-racing-gold"
+            >
+              <BedDouble size={16} /> Hospedaje y viajes
+            </Link>
+
+            <Link
               to="/registro"
               onClick={() => setOpen(false)}
-              className="mt-4 flex items-center justify-center gap-2 bg-racing-red py-3 text-sm font-bold uppercase tracking-wider text-white"
+              className="mt-3 flex items-center justify-center gap-2 bg-racing-red py-3 text-sm font-bold uppercase tracking-wider text-white"
             >
               <ClipboardList size={16} /> Inscribir mi vehículo
             </Link>
