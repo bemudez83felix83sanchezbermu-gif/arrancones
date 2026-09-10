@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   BarChart3,
   ClipboardList,
+  Images,
   LogOut,
+  QrCode,
   RefreshCw,
   Users,
 } from 'lucide-react';
@@ -14,11 +16,13 @@ import { useAuth } from '../lib/useAuth';
 import { Link, navigate } from '../router';
 import ParticipantsView from '../components/admin/ParticipantsView';
 import ReportsView from '../components/admin/ReportsView';
+import AlbumView from '../components/admin/AlbumView';
 import { BUTTON } from '../components/admin/ui';
 
 const TABS = [
   { id: 'participantes', label: 'Participantes', icon: Users },
   { id: 'reportes', label: 'Reportes', icon: BarChart3 },
+  { id: 'album', label: 'Álbum', icon: Images },
 ];
 
 export default function Admin() {
@@ -78,6 +82,10 @@ function AdminPanel({ admin, logout, tab, setTab }) {
               <ClipboardList size={15} />
               <span className="hidden sm:inline">Formulario</span>
             </Link>
+            <Link to="/admin/qr" className={`${BUTTON.ghost} shrink-0`} title="QR del álbum para imprimir">
+              <QrCode size={15} />
+              <span className="hidden sm:inline">QR álbum</span>
+            </Link>
             <Link to="/" className={`${BUTTON.ghost} shrink-0`} title="Volver al sitio">
               <ArrowLeft size={14} />
               <span className="hidden sm:inline">Sitio</span>
@@ -132,7 +140,7 @@ function AdminPanel({ admin, logout, tab, setTab }) {
           </p>
         )}
 
-        {tab === 'participantes' ? (
+        {tab === 'participantes' && (
           <ParticipantsView
             participants={participants}
             loading={loading}
@@ -140,9 +148,9 @@ function AdminPanel({ admin, logout, tab, setTab }) {
             onUpdate={update}
             onDelete={remove}
           />
-        ) : (
-          <ReportsView participants={participants} />
         )}
+        {tab === 'reportes' && <ReportsView participants={participants} />}
+        {tab === 'album' && <AlbumView />}
       </main>
     </div>
   );

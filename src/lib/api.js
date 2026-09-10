@@ -45,3 +45,18 @@ export const logout = () => request('/api/auth/logout', { method: 'POST' });
 
 export const fetchCurrentAdmin = () =>
   request('/api/auth/me').then((data) => data.admin);
+
+export const listAlbumAdmin = () =>
+  request('/api/album/admin').then((data) => data.photos ?? []);
+
+export const setAlbumPhotoHidden = (publicId, hidden, resourceType = 'image') =>
+  request('/api/album/admin', {
+    method: 'POST',
+    body: { publicId, action: hidden ? 'hide' : 'unhide', resourceType },
+  });
+
+export const deleteAlbumPhoto = (publicId, resourceType = 'image') =>
+  request('/api/album/admin', {
+    method: 'DELETE',
+    body: { publicId, resourceType },
+  });

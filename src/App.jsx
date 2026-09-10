@@ -4,8 +4,11 @@ import Landing from './pages/Landing';
 
 const Register = lazy(() => import('./pages/Register'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AdminQR = lazy(() => import('./pages/AdminQR'));
 const Login = lazy(() => import('./pages/Login'));
 const Lodging = lazy(() => import('./pages/Lodging'));
+const Album = lazy(() => import('./pages/Album'));
+const AlbumUpload = lazy(() => import('./pages/AlbumUpload'));
 
 function Loading() {
   return (
@@ -37,8 +40,14 @@ export default function App() {
       <Register />
     ) : path === '/hospedaje' ? (
       <Lodging />
+    ) : path === '/album' ? (
+      <Album />
+    ) : path === '/album/subir' ? (
+      <AlbumUpload />
     ) : path === '/admin' ? (
       <Admin />
+    ) : path === '/admin/qr' ? (
+      <AdminQR />
     ) : path === '/login' ? (
       <Login />
     ) : (

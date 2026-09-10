@@ -20,6 +20,8 @@
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.469.0",
     "ogl": "^1.0.11",
+    "qr-code-styling": "^1.9.2",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "xlsx": "^0.18.5"

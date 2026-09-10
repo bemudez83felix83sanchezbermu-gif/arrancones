@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BedDouble, ClipboardList, Menu, X } from 'lucide-react';
+import { BedDouble, ClipboardList, Images, Menu, X } from 'lucide-react';
 import { Link } from '../router';
 
 const links = [
@@ -61,6 +61,19 @@ export default function Navbar() {
           ))}
 
           <Link
+            to="/album"
+            className="group inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-white/80 transition hover:text-white"
+            aria-label="Álbum público del evento"
+          >
+            <Images size={15} />
+            Álbum
+            <span className="relative ml-1 flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-racing-red opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-racing-red" />
+            </span>
+          </Link>
+
+          <Link
             to="/hospedaje"
             className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-racing-gold transition hover:brightness-110"
           >
@@ -113,9 +126,21 @@ export default function Navbar() {
             ))}
 
             <Link
+              to="/album"
+              onClick={() => setOpen(false)}
+              className="mt-4 flex items-center justify-center gap-2 rounded-full border border-white/25 py-3 text-sm font-bold uppercase tracking-wider text-white"
+            >
+              <Images size={16} /> Álbum del evento
+              <span className="relative ml-1 flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-racing-red opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-racing-red" />
+              </span>
+            </Link>
+
+            <Link
               to="/hospedaje"
               onClick={() => setOpen(false)}
-              className="mt-4 flex items-center justify-center gap-2 rounded-full border border-racing-gold/50 py-3 text-sm font-bold uppercase tracking-wider text-racing-gold"
+              className="mt-3 flex items-center justify-center gap-2 rounded-full border border-racing-gold/50 py-3 text-sm font-bold uppercase tracking-wider text-racing-gold"
             >
               <BedDouble size={16} /> Hospedaje y viajes
             </Link>
