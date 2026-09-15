@@ -47,9 +47,12 @@ export function cldVideoPoster(url, width = 600) {
 export const cldVideoWeb = (url) => cldTransform(url, 'q_auto,f_mp4,vc_h264,ac_aac,w_1280,c_limit');
 
 /**
- * Miniatura universal — para imágenes usa cldThumb; para videos genera poster.
+ * Miniatura universal — para imágenes limita el ancho; para videos genera poster.
  */
-export const cldMediaThumb = (url) => (isVideoUrl(url) ? cldVideoPoster(url, 600) : cldThumb(url));
+export const cldMediaThumb = (url, width = 600) =>
+  isVideoUrl(url)
+    ? cldVideoPoster(url, width)
+    : cldTransform(url, `w_${width},c_limit,q_auto,f_auto`);
 
 /**
  * Duración en formato mm:ss para overlays. Acepta segundos (float) de Cloudinary.

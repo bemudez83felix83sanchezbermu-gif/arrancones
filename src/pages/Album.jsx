@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   ImagePlus,
@@ -24,16 +25,36 @@ import { ALBUM_CATEGORIES, ALBUM_CATEGORY_IDS } from '../../shared/album';
 
 const ALL = 'all';
 
-const readCategoryParam = () => {
-  const value = new URLSearchParams(window.location.search).get('cat');
-  return value && ALBUM_CATEGORIES[value] ? value : ALL;
+const ALL_ALBUM = {
+  id: ALL,
+  label: 'Todo el evento',
+  short: 'Todo',
+  hint: 'Cada foto y video del Car Fest 2K26 en un solo lugar',
+  color: '#FF2A2A',
 };
+
+/** `null` = portada con las tarjetas de álbumes; `all` o un id de sección = dentro de un álbum. */
+const readAlbumParam = () => {
+  const value = new URLSearchParams(window.location.search).get('cat');
+  return value === ALL || ALBUM_CATEGORIES[value] ? value : null;
+};
+
+const albumUrl = (id) => (id ? `/album?cat=${id}` : '/album');
 
 const isVideoItem = (item) => item.resourceType === 'video' || isVideoUrl(item.url);
 
+function describeMedia(list) {
+  const videos = list.filter(isVideoItem).length;
+  const pics = list.length - videos;
+  const parts = [];
+  if (pics) parts.push(`${pics} foto${pics === 1 ? '' : 's'}`);
+  if (videos) parts.push(`${videos} video${videos === 1 ? '' : 's'}`);
+  return parts.join(' · ');
+}
+
 export default function Album() {
   const [state, setState] = useState({ status: 'loading', photos: [], error: '' });
-  const [category, setCategory] = useState(readCategoryParam);
+  const [album, setAlbum] = useState(readAlbumParam);
   const [openIndex, setOpenIndex] = useState(null);
   const [tick, setTick] = useState(0);
 
@@ -62,23 +83,32 @@ export default function Album() {
     };
   }, [tick]);
 
-  const selectCategory = useCallback((id) => {
-    setCategory(id);
-    setOpenIndex(null);
-    window.history.replaceState({}, '', id === ALL ? '/album' : `/album?cat=${id}`);
+  // Abrir un álbum hace pushState: el "atrás" del celular regresa a las tarjetas.
+  useEffect(() => {
+    const sync = () => {
+      setAlbum(readAlbumParam());
+      setOpenIndex(null);
+    };
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
   }, []);
 
-  const counts = useMemo(() => {
-    const out = { [ALL]: state.photos.length };
-    for (const id of ALBUM_CATEGORY_IDS) out[id] = 0;
-    for (const photo of state.photos) out[photo.category] = (out[photo.category] || 0) + 1;
+  const goToAlbum = useCallback((id, { replace = false } = {}) => {
+    setAlbum(id);
+    setOpenIndex(null);
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', albumUrl(id));
+    if (!replace) window.scrollTo({ top: 0 });
+  }, []);
+
+  const byAlbum = useMemo(() => {
+    const out = { [ALL]: state.photos };
+    for (const id of ALBUM_CATEGORY_IDS) out[id] = [];
+    for (const photo of state.photos) out[photo.category]?.push(photo);
     return out;
   }, [state.photos]);
 
-  const photos = useMemo(
-    () => (category === ALL ? state.photos : state.photos.filter((p) => p.category === category)),
-    [state.photos, category],
-  );
+  const photos = album ? byAlbum[album] : [];
+  const activeAlbum = album === ALL ? ALL_ALBUM : ALBUM_CATEGORIES[album] ?? null;
 
   const openLightbox = useCallback((index) => setOpenIndex(index), []);
   const closeLightbox = useCallback(() => setOpenIndex(null), []);
@@ -108,19 +138,9 @@ export default function Album() {
     };
   }, [openIndex, closeLightbox, prev, next]);
 
-  const counter = useMemo(() => {
-    if (state.status !== 'ready') return '';
-    if (!photos.length) return '';
-    const videos = photos.filter(isVideoItem).length;
-    const pics = photos.length - videos;
-    const parts = [];
-    if (pics) parts.push(`${pics} foto${pics === 1 ? '' : 's'}`);
-    if (videos) parts.push(`${videos} video${videos === 1 ? '' : 's'}`);
-    return parts.join(' · ');
-  }, [state.status, photos]);
-
-  const activeCategory = ALBUM_CATEGORIES[category];
-  const uploadHref = activeCategory ? `/album/subir?cat=${category}` : '/album/subir';
+  const ready = state.status === 'ready';
+  const counter = ready ? describeMedia(album ? photos : state.photos) : '';
+  const uploadHref = album && album !== ALL ? `/album/subir?cat=${album}` : '/album/subir';
 
   return (
     <div className="min-h-screen bg-racing-asphalt text-white">
@@ -154,47 +174,67 @@ export default function Album() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-racing-red">
-              Álbum del evento
-            </span>
-            <h1 className="display mt-3 text-4xl leading-tight md:text-6xl">Car Fest 2K26</h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 md:text-base">
-              Fotos y videos que la comunidad subió, separados por sección. Toca cualquier
-              miniatura para verla en grande.
-            </p>
-            <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/40">
-              <ShieldCheck size={12} className="text-emerald-400/80" /> Cada archivo lo revisa el
-              equipo antes de publicarse.
-            </p>
+        {activeAlbum ? (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => goToAlbum(null)}
+              className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-white/50 transition hover:text-white"
+            >
+              <ArrowLeft size={13} /> Todos los álbumes
+            </button>
+            <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: activeAlbum.color }} />
+                  Álbum
+                </span>
+                <h1 className="display mt-3 text-4xl leading-tight md:text-6xl">{activeAlbum.label}</h1>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/55 md:text-base">
+                  {activeAlbum.hint}.
+                </p>
+              </div>
+              {counter && <span className="text-xs uppercase tracking-[0.25em] text-white/50">{counter}</span>}
+            </div>
           </div>
-          {counter && <span className="text-xs uppercase tracking-[0.25em] text-white/50">{counter}</span>}
-        </div>
+        ) : (
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-racing-red">
+                Álbumes del evento
+              </span>
+              <h1 className="display mt-3 text-4xl leading-tight md:text-6xl">Car Fest 2K26</h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 md:text-base">
+                Fotos y videos que subió la comunidad. Elige un álbum para verlo completo.
+              </p>
+              <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/40">
+                <ShieldCheck size={12} className="text-emerald-400/80" /> Cada archivo lo revisa el
+                equipo antes de publicarse.
+              </p>
+            </div>
+            {counter && <span className="text-xs uppercase tracking-[0.25em] text-white/50">{counter}</span>}
+          </div>
+        )}
 
-        <nav
-          aria-label="Secciones del álbum"
-          className="-mx-4 mb-8 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          <div className="flex w-max gap-2 md:w-auto md:flex-wrap">
-            <CategoryTab
-              label="Todo"
-              count={counts[ALL]}
-              active={category === ALL}
-              onClick={() => selectCategory(ALL)}
-            />
-            {ALBUM_CATEGORY_IDS.map((id) => (
-              <CategoryTab
-                key={id}
-                label={ALBUM_CATEGORIES[id].label}
-                color={ALBUM_CATEGORIES[id].color}
-                count={counts[id]}
-                active={category === id}
-                onClick={() => selectCategory(id)}
-              />
-            ))}
-          </div>
-        </nav>
+        {activeAlbum && (
+          <nav
+            aria-label="Cambiar de álbum"
+            className="-mx-4 mb-8 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden"
+          >
+            <div className="flex w-max gap-2 md:w-auto md:flex-wrap">
+              {[ALL_ALBUM, ...ALBUM_CATEGORY_IDS.map((id) => ALBUM_CATEGORIES[id])].map((item) => (
+                <CategoryTab
+                  key={item.id}
+                  label={item.id === ALL ? 'Todo' : item.label}
+                  color={item.id === ALL ? null : item.color}
+                  count={ready ? byAlbum[item.id].length : null}
+                  active={album === item.id}
+                  onClick={() => goToAlbum(item.id, { replace: true })}
+                />
+              ))}
+            </div>
+          </nav>
+        )}
 
         {state.status === 'loading' && (
           <div className="flex items-center justify-center py-24 text-white/50">
@@ -216,18 +256,36 @@ export default function Album() {
           </div>
         )}
 
-        {state.status === 'ready' && photos.length === 0 && (
+        {ready && !activeAlbum && (
+          <motion.div
+            key="albums"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <AlbumCard album={ALL_ALBUM} photos={byAlbum[ALL]} featured onOpen={() => goToAlbum(ALL)} />
+            {ALBUM_CATEGORY_IDS.map((id) => (
+              <AlbumCard
+                key={id}
+                album={ALBUM_CATEGORIES[id]}
+                photos={byAlbum[id]}
+                onOpen={() => goToAlbum(id)}
+              />
+            ))}
+          </motion.div>
+        )}
+
+        {ready && activeAlbum && photos.length === 0 && (
           <div className="flex flex-col items-center border border-dashed border-white/15 bg-white/[0.03] px-6 py-16 text-center">
             <Images size={30} className="text-white/40" />
             <p className="mt-4 text-lg font-semibold text-white">
-              {activeCategory
-                ? `Aún no hay fotos de ${activeCategory.label.toLowerCase()}`
-                : 'Aún no hay fotos ni videos'}
+              {album === ALL
+                ? 'Aún no hay fotos ni videos'
+                : `Aún no hay fotos de ${activeAlbum.label.toLowerCase()}`}
             </p>
             <p className="mt-2 max-w-sm text-sm text-white/50">
-              {activeCategory
-                ? activeCategory.hint + '. Sé el primero en compartirlo.'
-                : 'Sé el primero en compartir cómo se vivió el Car Fest 2K26.'}
+              Sé el primero en compartir cómo se vivió el Car Fest 2K26.
             </p>
             <Link
               to={uploadHref}
@@ -238,9 +296,9 @@ export default function Album() {
           </div>
         )}
 
-        {state.status === 'ready' && photos.length > 0 && (
+        {ready && activeAlbum && photos.length > 0 && (
           <motion.div
-            key={category}
+            key={album}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -266,7 +324,7 @@ export default function Album() {
                         photo.width && photo.height ? `${photo.width} / ${photo.height}` : undefined,
                     }}
                   />
-                  {category === ALL && cat && (
+                  {album === ALL && cat && (
                     <span className="absolute left-2 top-2 inline-flex items-center gap-1 bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/85">
                       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
                       {cat.short}
@@ -314,6 +372,98 @@ export default function Album() {
   );
 }
 
+const COVER_TILES = 3;
+
+function AlbumCard({ album, photos, featured = false, onOpen }) {
+  const summary = describeMedia(photos);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className={`group flex flex-col overflow-hidden border border-white/10 bg-white/[0.03] text-left transition duration-300 hover:-translate-y-0.5 hover:border-white/30 ${
+        featured ? 'sm:col-span-2 lg:col-span-3' : ''
+      }`}
+    >
+      <span className="block h-[3px] w-full" style={{ backgroundColor: album.color }} />
+      <Collage
+        photos={photos}
+        color={album.color}
+        className={featured ? 'aspect-[4/3] sm:aspect-[21/9]' : 'aspect-[4/3]'}
+      />
+      <span className="flex items-start justify-between gap-3 p-4">
+        <span className="min-w-0">
+          <span className="display block text-2xl leading-none text-white md:text-3xl">
+            {album.label}
+          </span>
+          <span className="mt-1.5 block text-xs leading-snug text-white/50">{album.hint}</span>
+          <span className="mt-3 block text-[11px] uppercase tracking-[0.2em] text-white/40">
+            {summary || 'Sin fotos aún'}
+          </span>
+        </span>
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-white/15 text-white/60 transition group-hover:border-white group-hover:text-white">
+          <ArrowUpRight size={16} />
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/** Portada del álbum: la más reciente grande y dos chicas; "+N" sobre la última si hay más. */
+function Collage({ photos, color, className }) {
+  if (!photos.length) {
+    return (
+      <span
+        className={`relative flex items-center justify-center overflow-hidden ${className}`}
+        style={{ background: `radial-gradient(circle at 30% 20%, ${color}38, transparent 65%), #0d0d0d` }}
+      >
+        <span className="flex flex-col items-center gap-2 text-white/35">
+          <Images size={28} />
+          <span className="text-[10px] uppercase tracking-[0.25em]">Sé el primero en subir</span>
+        </span>
+      </span>
+    );
+  }
+
+  const cover = photos.slice(0, COVER_TILES);
+  const extra = photos.length - cover.length;
+  const layout =
+    cover.length >= 3
+      ? 'grid-cols-3 grid-rows-2'
+      : cover.length === 2
+        ? 'grid-cols-2 grid-rows-1'
+        : 'grid-cols-1 grid-rows-1';
+
+  return (
+    <span className={`grid gap-0.5 overflow-hidden bg-black ${layout} ${className}`}>
+      {cover.map((photo, index) => (
+        <span
+          key={photo.id}
+          className={`relative block min-h-0 overflow-hidden ${
+            cover.length >= 3 && index === 0 ? 'col-span-2 row-span-2' : ''
+          }`}
+        >
+          <img
+            src={cldMediaThumb(photo.url, index === 0 ? 900 : 450)}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          />
+          {isVideoItem(photo) && (
+            <span className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-black">
+              <Play size={11} className="translate-x-[1px]" />
+            </span>
+          )}
+          {extra > 0 && index === cover.length - 1 && (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-lg font-semibold text-white">
+              +{extra}
+            </span>
+          )}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function CategoryTab({ label, count, color, active, onClick }) {
   const ref = useRef(null);
 
@@ -339,7 +489,7 @@ function CategoryTab({ label, count, color, active, onClick }) {
     >
       {color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
       {label}
-      <span className={active ? 'text-white/70' : 'text-white/35'}>{count}</span>
+      {count != null && <span className={active ? 'text-white/70' : 'text-white/35'}>{count}</span>}
     </button>
   );
 }
