@@ -9,6 +9,7 @@ import {
   Loader2,
   Play,
   RefreshCw,
+  Send,
   ShieldAlert,
   ShieldCheck,
   Trash2,
@@ -56,6 +57,8 @@ const SELECT =
 
 const APPROVE_BUTTON =
   'inline-flex items-center justify-center gap-2 bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50';
+
+const MODERATION_VERBS = { approve: 'aprobar', reject: 'rechazar', review: 'mandar a revisión' };
 
 const isVideoItem = (item) => item.resourceType === 'video' || isVideoUrl(item.url);
 
@@ -171,7 +174,7 @@ export default function AlbumView() {
     } finally {
       markBusy(ids, false);
     }
-    reportFailures(failures, action === 'approve' ? 'aprobar' : 'rechazar');
+    reportFailures(failures, MODERATION_VERBS[action]);
   };
 
   const changeCategory = async (photo, category) => {
@@ -220,6 +223,8 @@ export default function AlbumView() {
   };
 
   const pendingVisible = visible.filter((p) => p.status === 'pending').length;
+  const unmoderatedPhotos = state.photos.filter((p) => p.status === 'unmoderated');
+  const reviewBusy = unmoderatedPhotos.some((p) => busyIds.has(p.id));
   const rateLimit = state.rateLimit;
   const bulkBusy = visible.some((p) => busyIds.has(p.id));
 
@@ -250,11 +255,20 @@ export default function AlbumView() {
               {plural(stats.unmoderated, 'archivo se subió', 'archivos se subieron')} sin moderación
             </p>
             <p className="mt-1 text-white/60">
-              No se publican y no se pueden aprobar. Activa <b className="text-white">Moderation: Manual</b>{' '}
-              en el upload preset <code className="text-white">carfest_album</code> (Cloudinary → Settings →
-              Upload → Upload presets) para que todo lo nuevo llegue a Pendientes. Los que ya están sin
-              moderar solo se pueden borrar.
+              Así no se publican ni se pueden aprobar. Mándalos a revisión para que pasen a Pendientes. Si
+              siguen llegando archivos aquí, revisa que el upload preset{' '}
+              <code className="text-white">carfest_album</code> tenga <b className="text-white">Manual moderation</b>{' '}
+              (Cloudinary → Settings → Upload → Upload presets → Manage and Analyze).
             </p>
+            <button
+              type="button"
+              onClick={() => moderate(unmoderatedPhotos, 'review')}
+              disabled={reviewBusy}
+              className={`${BUTTON.ghost} mt-3`}
+            >
+              {reviewBusy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              Mandar {plural(stats.unmoderated, 'archivo', 'archivos')} a revisión
+            </button>
           </div>
         </div>
       )}
@@ -386,6 +400,7 @@ export default function AlbumView() {
                 onPreview={() => setPreviewId(photo.id)}
                 onApprove={() => moderate([photo], 'approve')}
                 onReject={() => moderate([photo], 'reject')}
+                onReview={() => moderate([photo], 'review')}
                 onCategory={(category) => changeCategory(photo, category)}
                 onDelete={() => setConfirmDelete(photo)}
               />
@@ -417,6 +432,7 @@ export default function AlbumView() {
             busy={busyIds.has(previewPhoto.id)}
             onApprove={() => moderateFromPreview(previewPhoto, 'approve')}
             onReject={() => moderateFromPreview(previewPhoto, 'reject')}
+            onReview={() => moderate([previewPhoto], 'review')}
             onCategory={(category) => changeCategory(previewPhoto, category)}
             onDelete={() => {
               setPreviewId(null);
@@ -503,7 +519,7 @@ function CategorySelect({ value, onChange, disabled, className = '' }) {
   );
 }
 
-function ModerationButtons({ photo, busy, onApprove, onReject, onDelete, size = 'card' }) {
+function ModerationButtons({ photo, busy, onApprove, onReject, onReview, onDelete, size = 'card' }) {
   const canModerate = photo.status !== 'unmoderated';
   const base =
     size === 'card'
@@ -515,6 +531,18 @@ function ModerationButtons({ photo, busy, onApprove, onReject, onDelete, size = 
 
   return (
     <>
+      {!canModerate && (
+        <button
+          type="button"
+          onClick={onReview}
+          disabled={busy}
+          className={`${base} ${border('border-sky-400/50')} text-sky-200 hover:bg-sky-400/15 hover:text-white`}
+          title="Pasarlo a Pendientes para aprobarlo o rechazarlo"
+        >
+          {busy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} className={icon} />}
+          Mandar a revisión
+        </button>
+      )}
       {canModerate && photo.status !== 'approved' && (
         <button
           type="button"
@@ -558,7 +586,7 @@ function ModerationButtons({ photo, busy, onApprove, onReject, onDelete, size = 
   );
 }
 
-function PhotoCard({ photo, busy, onPreview, onApprove, onReject, onCategory, onDelete }) {
+function PhotoCard({ photo, busy, onPreview, onApprove, onReject, onReview, onCategory, onDelete }) {
   const isVideo = isVideoItem(photo);
   const dimmed = photo.status === 'rejected' || photo.status === 'unmoderated';
 
@@ -617,6 +645,7 @@ function PhotoCard({ photo, busy, onPreview, onApprove, onReject, onCategory, on
           busy={busy}
           onApprove={onApprove}
           onReject={onReject}
+          onReview={onReview}
           onDelete={onDelete}
         />
       </div>
@@ -624,7 +653,7 @@ function PhotoCard({ photo, busy, onPreview, onApprove, onReject, onCategory, on
   );
 }
 
-function PreviewBody({ photo, busy, onApprove, onReject, onCategory, onDelete }) {
+function PreviewBody({ photo, busy, onApprove, onReject, onReview, onCategory, onDelete }) {
   return (
     <div>
       <div className="flex justify-center bg-black">
@@ -669,6 +698,7 @@ function PreviewBody({ photo, busy, onApprove, onReject, onCategory, onDelete })
           busy={busy}
           onApprove={onApprove}
           onReject={onReject}
+          onReview={onReview}
           onDelete={onDelete}
           size="modal"
         />

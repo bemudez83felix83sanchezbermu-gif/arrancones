@@ -61,7 +61,8 @@ export const albumCategoryLabel = (id) => ALBUM_CATEGORIES[normalizeAlbumCategor
 
 /**
  * `unmoderated` = subido con un preset sin `Moderation: Manual`. Nunca se publica
- * y Cloudinary no deja aprobarlo; solo se puede borrar.
+ * y no acepta `moderation_status` por update: "mandar a revisión" (acción `review`)
+ * lo mete a la cola con `explicit` y pasa a `pending`.
  */
 export const MODERATION_STATUSES = {
   pending: { id: 'pending', label: 'Pendiente', color: '#C2891A' },

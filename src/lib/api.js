@@ -26,8 +26,18 @@ const request = async (url, options = {}) => {
 export const listParticipants = () =>
   request('/api/participants').then((data) => data.participants ?? []);
 
-export const listPublicParticipants = () =>
-  request('/api/participants/public').then((data) => data.participants ?? []);
+// Competitors y el domo de la galería montan juntos en la landing: comparten la
+// petición en vuelo en vez de bajar dos veces las fotos base64.
+let publicParticipantsInFlight = null;
+
+export const listPublicParticipants = () => {
+  publicParticipantsInFlight ??= request('/api/participants/public')
+    .then((data) => data.participants ?? [])
+    .finally(() => {
+      publicParticipantsInFlight = null;
+    });
+  return publicParticipantsInFlight;
+};
 
 export const createParticipant = (body) =>
   request('/api/participants', { method: 'POST', body }).then((data) => data.participant);

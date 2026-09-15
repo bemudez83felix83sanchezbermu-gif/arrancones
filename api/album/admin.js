@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { json, readBody, withErrors } from '../../shared/db.js';
 import { getCurrentAdmin } from '../../shared/auth.js';
 import {
@@ -14,7 +15,8 @@ import {
  * Moderación previa del álbum. El preset `carfest_album` sube con
  * `moderation: manual`, así que todo nace `pending` y el álbum público solo lista
  * `approved`. Cloudinary sigue como fuente única: aprobar/rechazar cambia
- * `moderation_status`, cambiar categoría reescribe el `context`, borrar es destroy.
+ * `moderation_status`, cambiar categoría reescribe el `context`, borrar es destroy
+ * y "mandar a revisión" mete a la cola manual lo que se subió sin moderación.
  */
 
 const STATUS_ACTIONS = { approve: 'approved', reject: 'rejected' };
@@ -28,7 +30,7 @@ function cloudinaryCreds() {
     throw new Error('Cloudinary no está configurado (faltan API key/secret o cloud name).');
   }
   const auth = 'Basic ' + Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-  return { cloudName, auth };
+  return { cloudName, apiKey, apiSecret, auth };
 }
 
 async function cloudinaryError(upstream, what) {
@@ -119,6 +121,38 @@ async function updateResource(cloudName, auth, item, params) {
   if (!upstream.ok) throw await cloudinaryError(upstream, 'Cloudinary update falló');
 }
 
+/** Firma del Upload API: parámetros ordenados como `k=v&k=v`, más el secret, en SHA-1. */
+export function signParams(params, apiSecret) {
+  const payload = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  return createHash('sha1').update(payload + apiSecret).digest('hex');
+}
+
+/**
+ * Un archivo que nació sin moderación no acepta `moderation_status` por update.
+ * `explicit` (Upload API, firmado) sí lo mete a la cola manual y queda `pending`;
+ * además no gasta cuota del Admin API.
+ */
+async function sendToReview({ cloudName, apiKey, apiSecret }, item) {
+  const params = {
+    moderation: 'manual',
+    public_id: item.publicId,
+    timestamp: Math.floor(Date.now() / 1000),
+    type: 'upload',
+  };
+  const upstream = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/${item.resourceType}/explicit`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ ...params, api_key: apiKey, signature: signParams(params, apiSecret) }),
+    },
+  );
+  if (!upstream.ok) throw await cloudinaryError(upstream, 'Cloudinary explicit falló');
+}
+
 async function destroy(cloudName, auth, publicId, resourceType) {
   const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/${resourceType}/upload`;
   const form = new URLSearchParams({ 'public_ids[]': publicId });
@@ -171,7 +205,8 @@ export default withErrors(async (req, res) => {
   const admin = await getCurrentAdmin(req);
   if (!admin) return json(res, 401, { error: 'No autorizado' });
 
-  const { cloudName, auth } = cloudinaryCreds();
+  const creds = cloudinaryCreds();
+  const { cloudName, auth } = creds;
 
   if (req.method === 'GET') {
     return json(res, 200, await listAll(cloudName, auth));
@@ -191,6 +226,11 @@ export default withErrors(async (req, res) => {
       return json(res, 200, { status, ...result });
     }
 
+    if (action === 'review') {
+      const result = await runBatch(items, (item) => sendToReview(creds, item));
+      return json(res, 200, { status: 'pending', ...result });
+    }
+
     if (action === 'category') {
       const category = String(body.category || '');
       if (!ALBUM_CATEGORIES[category]) return json(res, 400, { error: 'Categoría no válida' });
@@ -203,7 +243,7 @@ export default withErrors(async (req, res) => {
       return json(res, 200, { category, ...result });
     }
 
-    return json(res, 400, { error: 'Acción no soportada (approve|reject|category)' });
+    return json(res, 400, { error: 'Acción no soportada (approve|reject|review|category)' });
   }
 
   if (req.method === 'DELETE') {

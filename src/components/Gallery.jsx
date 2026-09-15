@@ -1,49 +1,61 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
 import DomeGallery from './DomeGallery';
-import { Link } from '../router';
 import { GALLERY_IMAGES } from '../data/gallery';
-import { cldTransform } from '../lib/cloudinary';
-import { albumCategoryLabel } from '../../shared/album';
+import { listPublicParticipants } from '../lib/api';
 
 const SEGMENTS = 18;
 // DomeGallery acomoda 5 mosaicos por columna; lo que pase de ahí no se ve.
 const DOME_TILES = SEGMENTS * 5;
 
-/** Cuadrada y recortada al sujeto: el mosaico y la vista ampliada son 1:1. */
-function toDomeImage(photo) {
-  const credit = photo.uploader ? ` · foto de ${photo.uploader}` : '';
-  return {
-    src: cldTransform(photo.url, 'w_800,h_800,c_fill,g_auto,q_auto,f_auto'),
-    alt: `Car Fest 2K26 · ${albumCategoryLabel(photo.category)}${credit}`,
-  };
+/**
+ * `vehicle_photo` llega como data URL base64. El domo repite cada foto en varios
+ * mosaicos y la copia en `src` y `data-src`, así que se pasa a object URL: el DOM
+ * carga una URL corta y el navegador decodifica la imagen una sola vez.
+ */
+function toObjectUrl(dataUrl) {
+  const match = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl ?? '');
+  if (!match) return null;
+  try {
+    const binary = atob(match[2]);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: match[1] }));
+  } catch {
+    return null;
+  }
 }
 
 export default function Gallery() {
-  const [albumImages, setAlbumImages] = useState([]);
+  const [carImages, setCarImages] = useState([]);
 
-  // Solo llegan fotos aprobadas; si el álbum falla, el domo se queda con las fijas.
-  // Los videos quedan fuera porque el domo solo amplía imágenes.
+  // Si el endpoint falla, el domo se queda con las fotos fijas.
   useEffect(() => {
     let alive = true;
-    fetch('/api/album/public')
-      .then((res) => (res.ok ? res.json() : { photos: [] }))
-      .then((data) => {
+    const created = [];
+    listPublicParticipants()
+      .then((participants) => {
         if (!alive) return;
-        const photos = (data.photos || []).filter((photo) => photo.resourceType !== 'video');
-        setAlbumImages(photos.map(toDomeImage));
+        const next = [];
+        for (const participant of participants) {
+          const src = toObjectUrl(participant.vehicle_photo);
+          if (!src) continue;
+          created.push(src);
+          next.push({ src, alt: `${participant.vehicle_name} — ${participant.pilot_name}` });
+        }
+        setCarImages(next);
       })
       .catch(() => {});
     return () => {
       alive = false;
+      created.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
-  // Las del álbum van primero (más recientes arriba) para que ocupen el frente del domo.
+  // Los inscritos van primero (más recientes arriba) para que ocupen el frente del domo.
   const images = useMemo(
-    () => [...albumImages, ...GALLERY_IMAGES].slice(0, DOME_TILES),
-    [albumImages],
+    () => [...carImages, ...GALLERY_IMAGES].slice(0, DOME_TILES),
+    [carImages],
   );
 
   return (
@@ -65,17 +77,7 @@ export default function Gallery() {
           <p className="mx-auto mt-4 max-w-xl text-white/70">
             Arrastra para explorar y da click en cualquier auto para verlo en
             grande.
-            {albumImages.length > 0 && ' Incluye las fotos que suben los asistentes.'}
           </p>
-          {albumImages.length > 0 && (
-            <Link
-              to="/album"
-              className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-racing-red hover:text-white"
-            >
-              Ver el álbum completo
-              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          )}
         </motion.div>
       </div>
 
