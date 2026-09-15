@@ -1,14 +1,24 @@
 import { json, readBody, withErrors } from '../../shared/db.js';
 import { getCurrentAdmin } from '../../shared/auth.js';
+import {
+  ALBUM_FOLDER,
+  ALBUM_CATEGORIES,
+  MAX_MODERATION_BATCH,
+  UPLOADER_MAX,
+  isAlbumPublicId,
+  readAlbumContext,
+  toCloudinaryContext,
+} from '../../shared/album.js';
 
 /**
- * Moderación del álbum. Cloudinary sigue como fuente de verdad:
- * "ocultar" es un tag `hidden` en el recurso (reversible); "eliminar" es
- * destroy definitivo. Soporta tanto imágenes como videos.
+ * Moderación previa del álbum. El preset `carfest_album` sube con
+ * `moderation: manual`, así que todo nace `pending` y el álbum público solo lista
+ * `approved`. Cloudinary sigue como fuente única: aprobar/rechazar cambia
+ * `moderation_status`, cambiar categoría reescribe el `context`, borrar es destroy.
  */
 
-const HIDDEN_TAG = 'hidden';
-const FOLDER = 'carfest2k26/album';
+const STATUS_ACTIONS = { approve: 'approved', reject: 'rejected' };
+const CONCURRENCY = 5;
 
 function cloudinaryCreds() {
   const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -21,57 +31,92 @@ function cloudinaryCreds() {
   return { cloudName, auth };
 }
 
-async function listAll(cloudName, auth) {
-  const upstream = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`,
-    {
-      method: 'POST',
-      headers: { Authorization: auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        expression: `folder:${FOLDER}`,
-        max_results: 200,
-        with_field: ['tags', 'context'],
-        sort_by: [{ created_at: 'desc' }],
-      }),
-    },
-  );
-  if (!upstream.ok) {
-    const detail = (await upstream.text()).slice(0, 400);
-    throw new Error(`Cloudinary search falló (${upstream.status}): ${detail}`);
+async function cloudinaryError(upstream, what) {
+  const text = (await upstream.text()).slice(0, 400);
+  let message = text;
+  try {
+    message = JSON.parse(text)?.error?.message || text;
+  } catch {
+    // no era JSON
   }
+  return new Error(`${what} (${upstream.status}): ${message}`);
+}
+
+function readRateLimit(headers) {
+  const limit = Number(headers.get('x-featureratelimit-limit'));
+  const remaining = Number(headers.get('x-featureratelimit-remaining'));
+  if (!Number.isFinite(limit) || !Number.isFinite(remaining) || limit <= 0) return null;
+  return { limit, remaining, reset: headers.get('x-featureratelimit-reset') };
+}
+
+async function search(cloudName, auth, expression) {
+  const upstream = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`, {
+    method: 'POST',
+    headers: { Authorization: auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      expression,
+      max_results: 500,
+      with_field: ['context'],
+      sort_by: [{ created_at: 'desc' }],
+    }),
+  });
+  if (!upstream.ok) throw await cloudinaryError(upstream, 'Cloudinary search falló');
   const data = await upstream.json();
-  return (data.resources || []).map((row) => ({
-    id: row.public_id,
-    url: row.secure_url,
-    resourceType: row.resource_type || 'image',
-    width: row.width,
-    height: row.height,
-    format: row.format,
-    bytes: row.bytes,
-    duration: row.duration || null,
-    createdAt: row.created_at,
-    uploader: row.context?.custom?.uploader || null,
-    tags: row.tags || [],
-    hidden: (row.tags || []).includes(HIDDEN_TAG),
-  }));
+  return { resources: data.resources || [], rateLimit: readRateLimit(upstream.headers) };
 }
 
-/** Cloudinary requiere el `resource_type` en la URL para tag ops y destroy. */
-function tagUrl(cloudName, tag, resourceType) {
-  return `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/tags/${encodeURIComponent(tag)}`;
+/**
+ * El Search API filtra por `moderation_status` pero no lo devuelve en cada recurso,
+ * así que se cruza la carpeta completa con una búsqueda por estado.
+ */
+async function listAll(cloudName, auth) {
+  const base = `folder:${ALBUM_FOLDER}`;
+  const [all, pending, approved, rejected] = await Promise.all([
+    search(cloudName, auth, base),
+    search(cloudName, auth, `${base} AND moderation_status:pending`),
+    search(cloudName, auth, `${base} AND moderation_status:approved`),
+    search(cloudName, auth, `${base} AND moderation_status:rejected`),
+  ]);
+  const idsOf = (result) => new Set(result.resources.map((row) => row.public_id));
+  const sets = { pending: idsOf(pending), approved: idsOf(approved), rejected: idsOf(rejected) };
+
+  const photos = all.resources.map((row) => {
+    const { uploader, category } = readAlbumContext(row);
+    const status =
+      Object.keys(sets).find((key) => sets[key].has(row.public_id)) ?? 'unmoderated';
+    return {
+      id: row.public_id,
+      url: row.secure_url,
+      resourceType: row.resource_type || 'image',
+      width: row.width,
+      height: row.height,
+      format: row.format,
+      bytes: row.bytes,
+      duration: row.duration || null,
+      createdAt: row.created_at,
+      uploader,
+      category,
+      status,
+    };
+  });
+
+  const limits = [all, pending, approved, rejected].map((r) => r.rateLimit).filter(Boolean);
+  const rateLimit = limits.length
+    ? limits.reduce((min, r) => (r.remaining < min.remaining ? r : min))
+    : null;
+  return { photos, rateLimit };
 }
 
-async function toggleTag(cloudName, auth, publicId, tag, resourceType, command) {
-  const form = new URLSearchParams({ public_ids: publicId, command });
-  const upstream = await fetch(tagUrl(cloudName, tag, resourceType), {
+const assetPath = (publicId) => publicId.split('/').map(encodeURIComponent).join('/');
+
+async function updateResource(cloudName, auth, item, params) {
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/${item.resourceType}/upload/${assetPath(item.publicId)}`;
+  const upstream = await fetch(url, {
     method: 'POST',
     headers: { Authorization: auth, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: form,
+    body: new URLSearchParams(params),
   });
-  if (!upstream.ok) {
-    const detail = (await upstream.text()).slice(0, 400);
-    throw new Error(`Cloudinary ${command} tag falló (${upstream.status}): ${detail}`);
-  }
+  if (!upstream.ok) throw await cloudinaryError(upstream, 'Cloudinary update falló');
 }
 
 async function destroy(cloudName, auth, publicId, resourceType) {
@@ -81,14 +126,45 @@ async function destroy(cloudName, auth, publicId, resourceType) {
     method: 'DELETE',
     headers: { Authorization: auth },
   });
-  if (!upstream.ok) {
-    const detail = (await upstream.text()).slice(0, 400);
-    throw new Error(`Cloudinary destroy falló (${upstream.status}): ${detail}`);
-  }
+  if (!upstream.ok) throw await cloudinaryError(upstream, 'Cloudinary destroy falló');
 }
 
-function normalizeResourceType(value) {
-  return value === 'video' ? 'video' : 'image';
+/** Corre `task` sobre cada item con concurrencia limitada; reporta éxitos y fallos por separado. */
+async function runBatch(items, task) {
+  const done = [];
+  const failed = [];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < items.length) {
+      const item = items[cursor++];
+      try {
+        await task(item);
+        done.push(item.publicId);
+      } catch (err) {
+        failed.push({ publicId: item.publicId, error: String(err.message ?? err) });
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker));
+  return { done, failed };
+}
+
+function parseItems(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return { error: 'Faltan archivos (items)' };
+  if (raw.length > MAX_MODERATION_BATCH) {
+    return { error: `Máximo ${MAX_MODERATION_BATCH} archivos por petición` };
+  }
+  const items = [];
+  for (const entry of raw) {
+    const publicId = String(entry?.publicId || '').trim();
+    if (!isAlbumPublicId(publicId)) return { error: 'publicId fuera de la carpeta del álbum' };
+    items.push({
+      publicId,
+      resourceType: entry?.resourceType === 'video' ? 'video' : 'image',
+      uploader: String(entry?.uploader || '').trim().slice(0, UPLOADER_MAX),
+    });
+  }
+  return { items };
 }
 
 export default withErrors(async (req, res) => {
@@ -98,37 +174,43 @@ export default withErrors(async (req, res) => {
   const { cloudName, auth } = cloudinaryCreds();
 
   if (req.method === 'GET') {
-    const photos = await listAll(cloudName, auth);
-    return json(res, 200, { photos });
+    return json(res, 200, await listAll(cloudName, auth));
   }
 
   if (req.method === 'POST') {
     const body = await readBody(req);
-    const publicId = String(body.publicId || '').trim();
     const action = String(body.action || '').trim();
-    const resourceType = normalizeResourceType(body.resourceType);
-    if (!publicId) return json(res, 400, { error: 'Falta publicId' });
-    if (!publicId.startsWith(`${FOLDER}/`)) {
-      return json(res, 400, { error: 'publicId fuera de la carpeta del álbum' });
+    const { items, error } = parseItems(body.items);
+    if (error) return json(res, 400, { error });
+
+    if (STATUS_ACTIONS[action]) {
+      const status = STATUS_ACTIONS[action];
+      const result = await runBatch(items, (item) =>
+        updateResource(cloudName, auth, item, { moderation_status: status }),
+      );
+      return json(res, 200, { status, ...result });
     }
 
-    if (action === 'hide') {
-      await toggleTag(cloudName, auth, publicId, HIDDEN_TAG, resourceType, 'add');
-      return json(res, 200, { ok: true, publicId, hidden: true });
+    if (action === 'category') {
+      const category = String(body.category || '');
+      if (!ALBUM_CATEGORIES[category]) return json(res, 400, { error: 'Categoría no válida' });
+      // `context` en update reemplaza todo el contexto: se reenvía el uploader.
+      const result = await runBatch(items, (item) =>
+        updateResource(cloudName, auth, item, {
+          context: toCloudinaryContext({ uploader: item.uploader, category }),
+        }),
+      );
+      return json(res, 200, { category, ...result });
     }
-    if (action === 'unhide') {
-      await toggleTag(cloudName, auth, publicId, HIDDEN_TAG, resourceType, 'remove');
-      return json(res, 200, { ok: true, publicId, hidden: false });
-    }
-    return json(res, 400, { error: 'Acción no soportada (hide|unhide)' });
+
+    return json(res, 400, { error: 'Acción no soportada (approve|reject|category)' });
   }
 
   if (req.method === 'DELETE') {
     const body = await readBody(req);
     const publicId = String(body.publicId || '').trim();
-    const resourceType = normalizeResourceType(body.resourceType);
-    if (!publicId) return json(res, 400, { error: 'Falta publicId' });
-    if (!publicId.startsWith(`${FOLDER}/`)) {
+    const resourceType = body.resourceType === 'video' ? 'video' : 'image';
+    if (!isAlbumPublicId(publicId)) {
       return json(res, 400, { error: 'publicId fuera de la carpeta del álbum' });
     }
     await destroy(cloudName, auth, publicId, resourceType);

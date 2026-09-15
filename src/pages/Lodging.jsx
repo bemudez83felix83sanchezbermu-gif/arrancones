@@ -21,11 +21,21 @@ const TABS = [
   { id: 'actividades', label: 'Actividades', icon: Ship },
 ];
 
-const currency = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  maximumFractionDigits: 0,
-});
+const priceFormatters = {
+  MXN: new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: 0,
+  }),
+  USD: new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'code',
+    maximumFractionDigits: 0,
+  }),
+};
+
+const formatPrice = (amount, code = 'MXN') => priceFormatters[code].format(amount);
 
 export default function Lodging() {
   const [tab, setTab] = useState('hospedaje');
@@ -168,7 +178,7 @@ function Hero() {
 function TabBar({ tab, onChange }) {
   return (
     <div className="sticky top-0 z-20 -mx-4 mb-8 border-y border-white/10 bg-racing-asphalt/85 px-4 py-3 backdrop-blur md:mx-0 md:rounded-2xl md:border md:px-4">
-      <div className="flex items-center gap-1 overflow-x-auto md:gap-2">
+      <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] md:gap-2 [&::-webkit-scrollbar]:hidden">
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = tab === id;
           return (
@@ -241,10 +251,12 @@ function SectionHeading({ eyebrow, title, description }) {
 
 function HotelCard({ hotel }) {
   const bestSaving = useMemo(() => {
-    if (!hotel.rooms?.length) return 0;
-    return Math.max(
-      ...hotel.rooms.map((r) => (r.priceStrike ?? 0) - (r.price ?? 0)),
-    );
+    let best = { amount: 0, currency: 'MXN' };
+    for (const r of hotel.rooms ?? []) {
+      const amount = (r.priceStrike ?? 0) - (r.price ?? 0);
+      if (amount > best.amount) best = { amount, currency: r.currency ?? 'MXN' };
+    }
+    return best;
   }, [hotel.rooms]);
 
   return (
@@ -266,9 +278,9 @@ function HotelCard({ hotel }) {
             {hotel.badge}
           </span>
         )}
-        {bestSaving > 0 && (
+        {bestSaving.amount > 0 && (
           <span className="absolute right-3 top-3 rounded-full bg-racing-gold px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-racing-asphalt">
-            Ahorra {currency.format(bestSaving)}
+            Ahorra {formatPrice(bestSaving.amount, bestSaving.currency)}
           </span>
         )}
       </div>
@@ -293,12 +305,12 @@ function HotelCard({ hotel }) {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-racing-gold">
-                    {currency.format(room.price)}
+                  <p className="whitespace-nowrap text-lg font-bold text-racing-gold">
+                    {formatPrice(room.price, room.currency)}
                   </p>
                   {room.priceStrike && room.priceStrike > room.price && (
-                    <p className="text-xs text-white/40 line-through">
-                      {currency.format(room.priceStrike)}
+                    <p className="whitespace-nowrap text-xs text-white/40 line-through">
+                      {formatPrice(room.priceStrike, room.currency)}
                     </p>
                   )}
                   {room.priceLabel && (

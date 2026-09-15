@@ -5,10 +5,12 @@ import {
   ArrowLeft,
   Camera,
   CheckCircle2,
+  Clock,
   ImagePlus,
   Images,
   Loader2,
   Play,
+  ShieldCheck,
 } from 'lucide-react';
 import { Link } from '../router';
 import {
@@ -17,8 +19,16 @@ import {
   formatDuration,
   isVideoUrl,
 } from '../lib/cloudinary';
+import { ALBUM_CATEGORIES, ALBUM_CATEGORY_IDS, UPLOADER_MAX } from '../../shared/album';
 
 const WIDGET_SRC = 'https://widget.cloudinary.com/v2.0/global/all.js';
+
+const RULES = [
+  'Solo fotos y videos del Car Fest 2K26.',
+  'Nada de desnudos, contenido sexual, violencia ni armas.',
+  'Nada de groserías, símbolos de odio o burlas contra alguien.',
+  'Respeta a los demás: no exhibas a nadie sin su permiso.',
+];
 
 let widgetScriptPromise = null;
 
@@ -43,6 +53,11 @@ function loadWidgetScript() {
   return widgetScriptPromise;
 }
 
+const readCategoryParam = () => {
+  const value = new URLSearchParams(window.location.search).get('cat');
+  return value && ALBUM_CATEGORIES[value] ? value : '';
+};
+
 const widgetPalette = {
   window: '#0f1115',
   windowBorder: '#ffffff33',
@@ -64,10 +79,13 @@ export default function AlbumUpload() {
   const configured = Boolean(cloudName && uploadPreset);
 
   const [name, setName] = useState('');
+  const [category, setCategory] = useState(readCategoryParam);
   const [uploaded, setUploaded] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | loading | uploading | ready | error
   const [error, setError] = useState('');
   const widgetRef = useRef(null);
+  // El callback del widget se crea una sola vez; la categoría del lote se lee de aquí.
+  const batchCategoryRef = useRef('');
 
   useEffect(() => {
     if (!configured) {
@@ -157,6 +175,7 @@ export default function AlbumUpload() {
                     height: info.height,
                     resourceType: info.resource_type || 'image',
                     duration: info.duration || null,
+                    category: batchCategoryRef.current,
                   },
                   ...prev,
                 ];
@@ -192,21 +211,21 @@ export default function AlbumUpload() {
 
   const openWidget = useCallback(() => {
     const widget = widgetRef.current;
-    if (!widget) return;
-    const trimmed = name.trim().slice(0, 60);
+    if (!widget || !category) return;
+    const trimmed = name.trim().slice(0, UPLOADER_MAX);
+    batchCategoryRef.current = category;
     try {
       widget.update({
-        context: trimmed ? { uploader: trimmed } : {},
+        context: trimmed ? { uploader: trimmed, category } : { category },
         tags: trimmed ? ['carfest2k26-album', `by:${trimmed}`] : ['carfest2k26-album'],
       });
     } catch {
       // ignore, widget might not accept update on some versions
     }
     widget.open();
-  }, [name]);
+  }, [name, category]);
 
-  const busy = status === 'uploading' || status === 'loading';
-  const canOpen = status === 'ready' || status === 'uploading';
+  const canOpen = (status === 'ready' || status === 'uploading') && Boolean(category);
 
   const stats = useMemo(() => {
     if (!uploaded.length) return null;
@@ -248,23 +267,58 @@ export default function AlbumUpload() {
             Sube tus fotos y videos del evento
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/60 md:text-base">
-            Comparte lo mejor del día: arrancones, exhibiciones, ambiente. Fotos hasta 15&nbsp;MB,
-            videos hasta 60&nbsp;MB. Todo aparece en el álbum público del sitio para que la
-            comunidad lo vea.
+            Elige la sección, sube lo mejor del día y el equipo lo revisa antes de publicarlo en el
+            álbum. Fotos hasta 15&nbsp;MB, videos hasta 60&nbsp;MB.
           </p>
         </div>
 
-        <div className="border border-white/10 bg-white/[0.03] p-6 shadow-[0_20px_60px_-30px_rgba(255,42,42,0.35)] md:p-8">
-          <label className="block">
+        <div className="border border-white/10 bg-white/[0.03] p-5 shadow-[0_20px_60px_-30px_rgba(255,42,42,0.35)] md:p-8">
+          <fieldset>
+            <legend className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+              1. ¿De qué son tus fotos?
+            </legend>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {ALBUM_CATEGORY_IDS.map((id) => {
+                const cat = ALBUM_CATEGORIES[id];
+                const active = category === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setCategory(id)}
+                    aria-pressed={active}
+                    className={`relative flex min-w-0 flex-col items-start gap-1 border px-3 py-3 text-left transition ${
+                      active ? 'bg-white/[0.07]' : 'border-white/15 bg-black/30 hover:border-white/35'
+                    }`}
+                    style={active ? { borderColor: cat.color } : undefined}
+                  >
+                    <span className="flex w-full items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      <span className="truncate text-sm font-semibold text-white">{cat.label}</span>
+                      {active && (
+                        <CheckCircle2 size={14} className="ml-auto shrink-0" style={{ color: cat.color }} />
+                      )}
+                    </span>
+                    <span className="text-[11px] leading-snug text-white/45">{cat.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <label className="mt-6 block">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-              Tu nombre (opcional)
+              2. Tu nombre (opcional)
             </span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej. Andrés M."
-              maxLength={60}
+              maxLength={UPLOADER_MAX}
               className="mt-2 w-full border border-white/15 bg-black/40 px-4 py-3 text-white placeholder:text-white/30 focus:border-racing-red focus:outline-none"
             />
             <span className="mt-1.5 block text-[11px] text-white/40">
@@ -288,19 +342,38 @@ export default function AlbumUpload() {
                 <Loader2 size={16} className="animate-spin" />
                 Subiendo…
               </>
+            ) : !category ? (
+              'Elige una sección arriba'
             ) : (
               <>
                 <ImagePlus size={18} />
-                Subir fotos o videos
+                Subir a {ALBUM_CATEGORIES[category].short}
               </>
             )}
           </button>
 
-          <p className="mt-3 flex items-center justify-center gap-2 text-[11px] text-white/40">
-            <Camera size={12} /> Puedes elegir de tu galería o tomar la foto ahí mismo. En el
-            selector de tu celular está la opción de grabar video.
+          <p className="mt-3 flex items-start justify-center gap-2 text-center text-[11px] text-white/40">
+            <Camera size={12} className="mt-px shrink-0" /> Puedes elegir de tu galería o tomar la
+            foto ahí mismo. En el selector de tu celular está la opción de grabar video.
           </p>
         </div>
+
+        <section className="mt-6 border border-emerald-400/20 bg-emerald-400/[0.04] p-5">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
+            <ShieldCheck size={14} /> Antes de subir
+          </h2>
+          <ul className="mt-3 space-y-1.5 text-sm text-white/65">
+            {RULES.map((rule) => (
+              <li key={rule} className="flex gap-2">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-white/40" />
+                {rule}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[11px] leading-relaxed text-white/40">
+            Todo pasa por revisión: lo que no cumpla no se publica y se elimina.
+          </p>
+        </section>
 
         {status === 'error' && error ? (
           <div className="mt-6 flex items-start gap-2 border border-racing-red/40 bg-racing-red/10 p-4 text-sm text-white/80">
@@ -319,7 +392,7 @@ export default function AlbumUpload() {
               transition={{ duration: 0.25 }}
               className="mt-10"
             >
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-white/70">
                   Lo que acabas de subir
                 </h2>
@@ -332,6 +405,7 @@ export default function AlbumUpload() {
               <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
                 {uploaded.map((item) => {
                   const isVideo = item.resourceType === 'video' || isVideoUrl(item.url);
+                  const cat = ALBUM_CATEGORIES[item.category];
                   return (
                     <div
                       key={item.id}
@@ -357,16 +431,26 @@ export default function AlbumUpload() {
                           ) : null}
                         </>
                       )}
+                      <span className="absolute left-1 top-1 inline-flex items-center gap-1 bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-200">
+                        <Clock size={9} /> En revisión
+                      </span>
+                      {cat && (
+                        <span className="absolute bottom-1 left-1 inline-flex items-center gap-1 bg-black/75 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.12em] text-white/75">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                          {cat.short}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
               </div>
-              <p className="mt-4 text-xs text-white/45">
-                Gracias por compartir. Aparecerán en{' '}
+              <p className="mt-4 text-xs leading-relaxed text-white/45">
+                Gracias por compartir. El equipo revisa cada archivo y, en cuanto lo apruebe,
+                aparece en{' '}
                 <Link to="/album" className="text-racing-red hover:underline">
                   el álbum público
                 </Link>{' '}
-                en cuanto se procesen (los videos pueden tardar unos segundos).
+                dentro de su sección.
               </p>
             </motion.section>
           )}

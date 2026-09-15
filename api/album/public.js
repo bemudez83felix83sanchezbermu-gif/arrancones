@@ -1,4 +1,5 @@
 import { withErrors } from '../../shared/db.js';
+import { ALBUM_FOLDER, readAlbumContext } from '../../shared/album.js';
 
 const send = (res, status, body, cache) => {
   res.statusCode = status;
@@ -8,9 +9,10 @@ const send = (res, status, body, cache) => {
 };
 
 /**
- * Lista pública del álbum. Usa el endpoint /resources/search de Cloudinary
- * para traer imágenes y videos en una sola llamada, filtrando fuera lo que
- * el admin ocultó (tag `hidden`).
+ * Lista pública del álbum. Solo sale lo que un admin aprobó: el preset sube todo
+ * con `moderation: manual` y `moderation_status` solo cambia con el Admin API, así
+ * que quien sube por el preset unsigned no puede auto-publicarse. Si el preset
+ * perdiera la moderación, lo nuevo simplemente no aparece (falla cerrado).
  */
 export default withErrors(async (req, res) => {
   if (req.method !== 'GET') {
@@ -33,9 +35,9 @@ export default withErrors(async (req, res) => {
       method: 'POST',
       headers: { Authorization: auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        expression: 'folder:carfest2k26/album AND -tags:hidden',
-        max_results: 100,
-        with_field: ['tags', 'context'],
+        expression: `folder:${ALBUM_FOLDER} AND moderation_status:approved`,
+        max_results: 500,
+        with_field: ['context'],
         sort_by: [{ created_at: 'desc' }],
       }),
     },
@@ -47,18 +49,23 @@ export default withErrors(async (req, res) => {
   }
 
   const data = await upstream.json();
-  const items = (data.resources || []).map((row) => ({
-    id: row.public_id,
-    url: row.secure_url,
-    resourceType: row.resource_type || 'image',
-    width: row.width,
-    height: row.height,
-    format: row.format,
-    bytes: row.bytes,
-    duration: row.duration || null,
-    createdAt: row.created_at,
-    uploader: row.context?.custom?.uploader || null,
-  }));
+  const items = (data.resources || []).map((row) => {
+    const { uploader, category } = readAlbumContext(row);
+    return {
+      id: row.public_id,
+      url: row.secure_url,
+      resourceType: row.resource_type || 'image',
+      width: row.width,
+      height: row.height,
+      format: row.format,
+      bytes: row.bytes,
+      duration: row.duration || null,
+      createdAt: row.created_at,
+      uploader,
+      category,
+    };
+  });
 
-  return send(res, 200, { photos: items }, 's-maxage=30, stale-while-revalidate=180');
+  // 60 s de edge: cada miss es una llamada al Admin API (500/h en el plan Free).
+  return send(res, 200, { photos: items }, 's-maxage=60, stale-while-revalidate=300');
 });

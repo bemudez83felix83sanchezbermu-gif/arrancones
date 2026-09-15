@@ -8,6 +8,7 @@ import {
   LogOut,
   QrCode,
   RefreshCw,
+  Ticket,
   Users,
 } from 'lucide-react';
 import { EVENT } from '../data/event';
@@ -78,6 +79,14 @@ function AdminPanel({ admin, logout, tab, setTab }) {
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
+            <Link
+              to="/admin/taquilla"
+              className={`${BUTTON.primary} shrink-0`}
+              title="Taquilla: entradas vendidas y dinero recaudado"
+            >
+              <Ticket size={15} />
+              Taquilla
+            </Link>
             <Link to="/registro" className={`${BUTTON.ghost} shrink-0`} title="Formulario de registro">
               <ClipboardList size={15} />
               <span className="hidden sm:inline">Formulario</span>

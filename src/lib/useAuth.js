@@ -3,7 +3,8 @@ import { fetchCurrentAdmin, login as loginRequest, logout as logoutRequest } fro
 
 export function useAuth() {
   const [admin, setAdmin] = useState(null);
-  const [status, setStatus] = useState('loading'); // 'loading' | 'authed' | 'anon'
+  // 'loading' | 'authed' | 'anon' | 'offline' (no se pudo preguntar al servidor)
+  const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -12,14 +13,25 @@ export function useAuth() {
       setAdmin(current);
       setStatus('authed');
     } catch (err) {
+      // Sin señal no significa sesión cerrada: la taquilla debe seguir vendiendo.
+      if (!err?.status) {
+        setStatus((prev) => (prev === 'authed' ? prev : 'offline'));
+        return;
+      }
       setAdmin(null);
       setStatus('anon');
-      if (err?.status && err.status !== 401) setError(err.message);
+      if (err.status !== 401) setError(err.message);
     }
   }, []);
 
   useEffect(() => {
     refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const onOnline = () => refresh();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
   }, [refresh]);
 
   const login = useCallback(async (credentials) => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   Loader2,
   Play,
   RefreshCw,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 import { Link } from '../router';
@@ -19,9 +20,20 @@ import {
   formatDuration,
   isVideoUrl,
 } from '../lib/cloudinary';
+import { ALBUM_CATEGORIES, ALBUM_CATEGORY_IDS } from '../../shared/album';
+
+const ALL = 'all';
+
+const readCategoryParam = () => {
+  const value = new URLSearchParams(window.location.search).get('cat');
+  return value && ALBUM_CATEGORIES[value] ? value : ALL;
+};
+
+const isVideoItem = (item) => item.resourceType === 'video' || isVideoUrl(item.url);
 
 export default function Album() {
   const [state, setState] = useState({ status: 'loading', photos: [], error: '' });
+  const [category, setCategory] = useState(readCategoryParam);
   const [openIndex, setOpenIndex] = useState(null);
   const [tick, setTick] = useState(0);
 
@@ -50,10 +62,27 @@ export default function Album() {
     };
   }, [tick]);
 
+  const selectCategory = useCallback((id) => {
+    setCategory(id);
+    setOpenIndex(null);
+    window.history.replaceState({}, '', id === ALL ? '/album' : `/album?cat=${id}`);
+  }, []);
+
+  const counts = useMemo(() => {
+    const out = { [ALL]: state.photos.length };
+    for (const id of ALBUM_CATEGORY_IDS) out[id] = 0;
+    for (const photo of state.photos) out[photo.category] = (out[photo.category] || 0) + 1;
+    return out;
+  }, [state.photos]);
+
+  const photos = useMemo(
+    () => (category === ALL ? state.photos : state.photos.filter((p) => p.category === category)),
+    [state.photos, category],
+  );
+
   const openLightbox = useCallback((index) => setOpenIndex(index), []);
   const closeLightbox = useCallback(() => setOpenIndex(null), []);
 
-  const photos = state.photos;
   const currentPhoto = openIndex != null ? photos[openIndex] : null;
 
   const prev = useCallback(() => {
@@ -82,13 +111,16 @@ export default function Album() {
   const counter = useMemo(() => {
     if (state.status !== 'ready') return '';
     if (!photos.length) return '';
-    const videos = photos.filter((p) => p.resourceType === 'video' || isVideoUrl(p.url)).length;
+    const videos = photos.filter(isVideoItem).length;
     const pics = photos.length - videos;
     const parts = [];
     if (pics) parts.push(`${pics} foto${pics === 1 ? '' : 's'}`);
     if (videos) parts.push(`${videos} video${videos === 1 ? '' : 's'}`);
     return parts.join(' · ');
   }, [state.status, photos]);
+
+  const activeCategory = ALBUM_CATEGORIES[category];
+  const uploadHref = activeCategory ? `/album/subir?cat=${category}` : '/album/subir';
 
   return (
     <div className="min-h-screen bg-racing-asphalt text-white">
@@ -112,7 +144,7 @@ export default function Album() {
               <RefreshCw size={12} /> Actualizar
             </button>
             <Link
-              to="/album/subir"
+              to={uploadHref}
               className="inline-flex items-center gap-1.5 bg-racing-red px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-racing-red/85"
             >
               <ImagePlus size={12} /> Subir
@@ -122,19 +154,47 @@ export default function Album() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:px-8 md:py-14">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-racing-red">
               Álbum del evento
             </span>
             <h1 className="display mt-3 text-4xl leading-tight md:text-6xl">Car Fest 2K26</h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 md:text-base">
-              Fotos y videos que la comunidad subió durante el evento. Toca cualquier miniatura
-              para verla en grande.
+              Fotos y videos que la comunidad subió, separados por sección. Toca cualquier
+              miniatura para verla en grande.
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/40">
+              <ShieldCheck size={12} className="text-emerald-400/80" /> Cada archivo lo revisa el
+              equipo antes de publicarse.
             </p>
           </div>
           {counter && <span className="text-xs uppercase tracking-[0.25em] text-white/50">{counter}</span>}
         </div>
+
+        <nav
+          aria-label="Secciones del álbum"
+          className="-mx-4 mb-8 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="flex w-max gap-2 md:w-auto md:flex-wrap">
+            <CategoryTab
+              label="Todo"
+              count={counts[ALL]}
+              active={category === ALL}
+              onClick={() => selectCategory(ALL)}
+            />
+            {ALBUM_CATEGORY_IDS.map((id) => (
+              <CategoryTab
+                key={id}
+                label={ALBUM_CATEGORIES[id].label}
+                color={ALBUM_CATEGORIES[id].color}
+                count={counts[id]}
+                active={category === id}
+                onClick={() => selectCategory(id)}
+              />
+            ))}
+          </div>
+        </nav>
 
         {state.status === 'loading' && (
           <div className="flex items-center justify-center py-24 text-white/50">
@@ -159,12 +219,18 @@ export default function Album() {
         {state.status === 'ready' && photos.length === 0 && (
           <div className="flex flex-col items-center border border-dashed border-white/15 bg-white/[0.03] px-6 py-16 text-center">
             <Images size={30} className="text-white/40" />
-            <p className="mt-4 text-lg font-semibold text-white">Aún no hay fotos ni videos</p>
+            <p className="mt-4 text-lg font-semibold text-white">
+              {activeCategory
+                ? `Aún no hay fotos de ${activeCategory.label.toLowerCase()}`
+                : 'Aún no hay fotos ni videos'}
+            </p>
             <p className="mt-2 max-w-sm text-sm text-white/50">
-              Sé el primero en compartir cómo se vivió el Car Fest 2K26.
+              {activeCategory
+                ? activeCategory.hint + '. Sé el primero en compartirlo.'
+                : 'Sé el primero en compartir cómo se vivió el Car Fest 2K26.'}
             </p>
             <Link
-              to="/album/subir"
+              to={uploadHref}
               className="mt-6 inline-flex items-center gap-2 bg-racing-red px-5 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-racing-red/85"
             >
               <ImagePlus size={14} /> Subir fotos o videos
@@ -173,9 +239,16 @@ export default function Album() {
         )}
 
         {state.status === 'ready' && photos.length > 0 && (
-          <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
+          <motion.div
+            key={category}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="columns-2 gap-3 md:columns-3 lg:columns-4"
+          >
             {photos.map((photo, index) => {
-              const isVideo = photo.resourceType === 'video' || isVideoUrl(photo.url);
+              const isVideo = isVideoItem(photo);
+              const cat = ALBUM_CATEGORIES[photo.category];
               return (
                 <button
                   key={photo.id}
@@ -185,7 +258,7 @@ export default function Album() {
                 >
                   <img
                     src={cldMediaThumb(photo.url)}
-                    alt={isVideo ? 'Video del Car Fest' : 'Foto del Car Fest'}
+                    alt={`${isVideo ? 'Video' : 'Foto'} de ${cat?.label ?? 'Car Fest'}`}
                     loading="lazy"
                     className="block h-auto w-full transition duration-500 group-hover:scale-[1.02]"
                     style={{
@@ -193,6 +266,12 @@ export default function Album() {
                         photo.width && photo.height ? `${photo.width} / ${photo.height}` : undefined,
                     }}
                   />
+                  {category === ALL && cat && (
+                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-white/85">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      {cat.short}
+                    </span>
+                  )}
                   {isVideo && (
                     <>
                       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/10">
@@ -208,14 +287,14 @@ export default function Album() {
                     </>
                   )}
                   {photo.uploader && (
-                    <span className="block bg-black/70 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/60">
+                    <span className="block truncate bg-black/70 px-2 py-1 text-left text-[10px] uppercase tracking-[0.18em] text-white/60">
                       @{photo.uploader}
                     </span>
                   )}
                 </button>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </main>
 
@@ -235,7 +314,38 @@ export default function Album() {
   );
 }
 
+function CategoryTab({ label, count, color, active, onClick }) {
+  const ref = useRef(null);
+
+  // En móvil la fila se desplaza horizontalmente: la pestaña activa (o la de ?cat=) queda a la vista.
+  useEffect(() => {
+    if (active) ref.current?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [active]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex shrink-0 items-center gap-2 border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] transition ${
+        active ? 'text-white' : 'border-white/15 text-white/55 hover:border-white/35 hover:text-white'
+      }`}
+      style={
+        active
+          ? { borderColor: color ?? '#FFFFFF', backgroundColor: `${color ?? '#FFFFFF'}24` }
+          : undefined
+      }
+    >
+      {color && <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />}
+      {label}
+      <span className={active ? 'text-white/70' : 'text-white/35'}>{count}</span>
+    </button>
+  );
+}
+
 function Lightbox({ photo, onClose, onPrev, onNext, index, total }) {
+  const cat = ALBUM_CATEGORIES[photo.category];
   return (
     <motion.div
       key="lb"
@@ -296,7 +406,7 @@ function Lightbox({ photo, onClose, onPrev, onNext, index, total }) {
         className="relative flex max-h-full max-w-5xl flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {photo.resourceType === 'video' || isVideoUrl(photo.url) ? (
+        {isVideoItem(photo) ? (
           <video
             key={photo.id}
             src={cldVideoWeb(photo.url)}
@@ -310,14 +420,22 @@ function Lightbox({ photo, onClose, onPrev, onNext, index, total }) {
         ) : (
           <img
             src={cldPreview(photo.url)}
-            alt="Foto del Car Fest"
+            alt={`Foto de ${cat?.label ?? 'Car Fest'}`}
             className="max-h-[80vh] w-auto max-w-full object-contain"
           />
         )}
         <div className="mt-3 flex w-full items-center justify-between gap-3 text-xs text-white/60">
-          <span>{total > 1 ? `${index + 1} / ${total}` : ''}</span>
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            {total > 1 ? `${index + 1} / ${total}` : ''}
+            {cat && (
+              <span className="inline-flex items-center gap-1 truncate uppercase tracking-[0.18em] text-white/50">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: cat.color }} />
+                {cat.short}
+              </span>
+            )}
+          </span>
           {photo.uploader ? (
-            <span className="uppercase tracking-[0.2em] text-white/50">@{photo.uploader}</span>
+            <span className="truncate uppercase tracking-[0.2em] text-white/50">@{photo.uploader}</span>
           ) : (
             <span />
           )}
@@ -325,10 +443,10 @@ function Lightbox({ photo, onClose, onPrev, onNext, index, total }) {
             href={photo.url}
             target="_blank"
             rel="noreferrer noopener"
-            className="uppercase tracking-[0.2em] text-white/60 transition hover:text-white"
+            className="shrink-0 uppercase tracking-[0.2em] text-white/60 transition hover:text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            Ver original ↗
+            Original ↗
           </a>
         </div>
       </motion.div>

@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 const Register = lazy(() => import('./pages/Register'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminQR = lazy(() => import('./pages/AdminQR'));
+const Taquilla = lazy(() => import('./pages/Taquilla'));
 const Login = lazy(() => import('./pages/Login'));
 const Lodging = lazy(() => import('./pages/Lodging'));
 const Album = lazy(() => import('./pages/Album'));
@@ -48,6 +49,8 @@ export default function App() {
       <Admin />
     ) : path === '/admin/qr' ? (
       <AdminQR />
+    ) : path === '/admin/taquilla' ? (
+      <Taquilla />
     ) : path === '/login' ? (
       <Login />
     ) : (

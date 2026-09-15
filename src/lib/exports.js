@@ -34,9 +34,9 @@ const COLUMNS = [
   { label: 'Registrado', width: 20, pdfWidth: 85, get: (row) => formatDateTime(row.created_at) },
 ];
 
-const fileStamp = () => new Date().toLocaleDateString('en-CA');
+export const fileStamp = () => new Date().toLocaleDateString('en-CA');
 
-const triggerDownload = (blob, filename) => {
+export const triggerDownload = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

@@ -6,7 +6,10 @@
 // Precios en MXN. Lo que el visitante paga es `price` (tarifa normal del hotel).
 // La tarifa de agencia queda fuera de la UI (es nuestro costo interno).
 // Opcionalmente `priceStrike` muestra un precio tachado más alto como gancho
-// visual de descuento.
+// visual de descuento. Si el hotel cobra en dólares, la habitación lleva
+// `currency: 'USD'` y los montos van en USD.
+//
+// Los hoteles se listan de mayor a menor margen para la agencia.
 
 // Número dedicado de la agencia para reservaciones de hospedaje,
 // gastronomía y actividades. Diferente al de contacto del evento.
@@ -19,27 +22,68 @@ export function reservationLink(item, extra = '') {
   return `https://wa.me/${RESERVATIONS_WHATSAPP}?text=${encodeURIComponent(message)}`;
 }
 
+const mapsSearch = (query) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
 export const hotels = [
   {
-    slug: 'hotel-vinas-del-mar',
-    name: 'Hotel Viñas del Mar',
-    tagline: 'Frente al malecón, ideal para parejas y familias.',
-    badge: 'Malecón',
-    folder: '/hospedaje/hoteles/hotel-vinas-del-mar',
-    mapsUrl: 'https://maps.app.goo.gl/Qhb1k9LVJDnSjAtW6',
-    notes: ['Mínimo 2 noches para reservar con tarifa Car Fest.'],
+    slug: 'hotel-playa-inn',
+    name: 'Playa Inn Rocky Point',
+    tagline: 'Hotel estilo colonial con alberca central y jardines, cómodo para grupos.',
+    badge: 'Alberca',
+    folder: '/hospedaje/hoteles/hotel-playa-inn',
+    mapsUrl: mapsSearch('Playa Inn Hotel Puerto Peñasco'),
     rooms: [
       {
         type: 'Habitación sencilla',
         capacity: '2 personas',
-        price: 1500,
-        priceStrike: 1750,
+        price: 1790,
+        priceStrike: 2050,
       },
       {
         type: 'Habitación doble',
         capacity: '4 personas',
-        price: 1700,
-        priceStrike: 1950,
+        price: 1970,
+        priceStrike: 2250,
+      },
+    ],
+  },
+  {
+    slug: 'hotel-penasco-del-sol',
+    name: 'Hotel Peñasco del Sol',
+    tagline: 'Resort frente al mar con alberca, camastros y desayuno incluido.',
+    badge: 'Frente al mar',
+    folder: '/hospedaje/hoteles/hotel-penasco-del-sol',
+    mapsUrl: mapsSearch('Hotel Peñasco del Sol Puerto Peñasco'),
+    notes: [
+      'Tarifa en dólares con desayuno e impuestos incluidos.',
+      'Elige entre cuatro habitaciones de lujo: dos camas queen o una king, con vista a la alberca.',
+    ],
+    rooms: [
+      {
+        type: 'Habitación de lujo',
+        capacity: '2 a 4 personas',
+        price: 215,
+        priceStrike: 245,
+        currency: 'USD',
+        priceLabel: 'Desayuno incluido',
+      },
+    ],
+  },
+  {
+    slug: 'mannys-beach-club',
+    name: "Manny's Beach Club",
+    tagline: 'Beach club con habitaciones familiares y sofá cama incluido.',
+    badge: 'Playa',
+    folder: '/hospedaje/hoteles/mannys-beach-club',
+    mapsUrl: 'https://maps.app.goo.gl/2yLzoH2kkDKgbKxG9',
+    rooms: [
+      {
+        type: 'Habitación doble + sofá cama',
+        capacity: '4 personas + niños',
+        price: 2150,
+        priceStrike: 2500,
+        priceLabel: 'Precio fin de semana',
       },
     ],
   },
@@ -66,19 +110,25 @@ export const hotels = [
     ],
   },
   {
-    slug: 'mannys-beach-club',
-    name: "Manny's Beach Club",
-    tagline: 'Beach club con habitaciones familiares y sofá cama incluido.',
-    badge: 'Playa',
-    folder: '/hospedaje/hoteles/mannys-beach-club',
-    mapsUrl: 'https://maps.app.goo.gl/2yLzoH2kkDKgbKxG9',
+    slug: 'hotel-vinas-del-mar',
+    name: 'Hotel Viñas del Mar',
+    tagline: 'Frente al malecón, ideal para parejas y familias.',
+    badge: 'Malecón',
+    folder: '/hospedaje/hoteles/hotel-vinas-del-mar',
+    mapsUrl: 'https://maps.app.goo.gl/Qhb1k9LVJDnSjAtW6',
+    notes: ['Mínimo 2 noches para reservar con tarifa Car Fest.'],
     rooms: [
       {
-        type: 'Habitación doble + sofá cama',
-        capacity: '4 personas + niños',
-        price: 2150,
-        priceStrike: 2500,
-        priceLabel: 'Precio fin de semana',
+        type: 'Habitación sencilla',
+        capacity: '2 personas',
+        price: 1500,
+        priceStrike: 1750,
+      },
+      {
+        type: 'Habitación doble',
+        capacity: '4 personas',
+        price: 1700,
+        priceStrike: 1950,
       },
     ],
   },

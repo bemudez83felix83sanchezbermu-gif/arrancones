@@ -157,12 +157,13 @@ export default function AdminQR() {
               </li>
               <li className="flex gap-2">
                 <span className="display shrink-0 text-racing-red">03.</span>
-                La gente lo escanea → sube su foto → aparece en{' '}
-                <span className="text-white">/album</span>.
+                La gente lo escanea → elige sección → sube su foto. Queda pendiente, no se
+                publica sola.
               </li>
               <li className="flex gap-2">
                 <span className="display shrink-0 text-racing-red">04.</span>
-                Modera desde la pestaña <span className="text-white">Álbum</span> del panel.
+                Aprueba desde la pestaña <span className="text-white">Álbum</span> del panel y
+                aparece en <span className="text-white">/album</span>.
               </li>
             </ol>
           </Panel>
@@ -246,7 +247,7 @@ function Poster({ url, withLogo, sizeClass, qrSize }) {
         {[
           { n: '01', t: 'Escanea con la cámara' },
           { n: '02', t: 'Elige o toma tus fotos' },
-          { n: '03', t: 'Aparecen en el álbum' },
+          { n: '03', t: 'Se revisan y publican' },
         ].map((step) => (
           <div key={step.n} className="flex flex-col items-center">
             <span className="display text-2xl text-racing-red">{step.n}</span>
