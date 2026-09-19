@@ -33,8 +33,8 @@ export const CATEGORIES = {
   arrancones: {
     id: 'arrancones',
     label: 'Arrancones',
-    fee: 500,
-    feeLabel: '$500 MXN',
+    fee: 300,
+    feeLabel: '$300 MXN',
     allowsCopilot: false,
     requiresRaceClass: true,
     day: 'Domingo 27 de septiembre',
