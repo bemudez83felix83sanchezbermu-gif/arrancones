@@ -48,14 +48,20 @@ export const CATEGORIES = {
 export const CATEGORY_IDS = Object.keys(CATEGORIES);
 
 /**
- * Clases dentro de arrancones (según flyer del evento). El id se guarda tal cual
- * en la BD; el label es para mostrar en el formulario, panel y CSV.
+ * Clases dentro de arrancones (según el orden de inicio del evento). El id se
+ * guarda tal cual en la BD; el label es para mostrar en el formulario, panel y
+ * exportaciones, y el hint aclara qué autos entran en esa corrida.
+ * El orden de las llaves es el orden en que corren.
  */
 export const ARRANCONES_CLASSES = {
-  '4x4': { id: '4x4', label: '4x4' },
-  '4_cil': { id: '4_cil', label: '4 cilindros libre' },
-  '8_cil': { id: '8_cil', label: '8 cilindros libre' },
+  '6_cil': { id: '6_cil', label: '6 cil libre a poder', hint: 'Puros Infinitis' },
   bracket: { id: 'bracket', label: 'Bracket' },
+  '4_cil': { id: '4_cil', label: '4 cil libre a poder', hint: 'Honda y VW' },
+  '8_cil': { id: '8_cil', label: '8 cil libre', hint: 'No entran los 4x4' },
+  '4x4': { id: '4x4', label: '4x4 libre' },
+  arbol_honda: { id: 'arbol_honda', label: '1 Árbol Honda libre a poder' },
+  '4_cil_honda': { id: '4_cil_honda', label: '4 cil Honda all motor' },
+  '6_cil_all_motor': { id: '6_cil_all_motor', label: '6 cil all motor' },
 };
 
 export const ARRANCONES_CLASS_IDS = Object.keys(ARRANCONES_CLASSES);
@@ -200,7 +206,7 @@ export function validateParticipant(input = {}, { partial = false, requirePhoto 
     const raceClass = clean(input.race_class);
     if (requires) {
       if (!ARRANCONES_CLASSES[raceClass]) {
-        errors.race_class = 'Elige la categoría del arrancón (4x4, 4 cil, 8 cil o bracket).';
+        errors.race_class = 'Elige la categoría del arrancón en la que vas a correr.';
       } else {
         value.race_class = raceClass;
       }

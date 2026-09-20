@@ -3,6 +3,7 @@
  * Uso: npm run db:setup
  */
 import { getSql } from '../shared/db.js';
+import { ARRANCONES_CLASS_IDS } from '../shared/participants.js';
 
 const sql = getSql();
 
@@ -30,25 +31,28 @@ await sql`
 // Para bases creadas antes de que existiera el selector de estado.
 await sql`alter table participants add column if not exists state text`;
 
-// Subcategoría de arrancones (4x4, 4 cil libre, 8 cil libre, bracket).
-// Se agrega en caliente para bases anteriores; el CHECK se maneja aparte
-// para que quede una sola vez sin depender de "if not exists".
+// Subcategoría de arrancones. Se agrega en caliente para bases anteriores.
+// El CHECK se tira y se vuelve a crear en cada corrida a partir de
+// ARRANCONES_CLASS_IDS: así agregar una clase en shared/participants.js es el
+// único paso y la BD nunca se queda con la lista vieja.
 await sql`alter table participants add column if not exists race_class text`;
-await sql`
-  do $$
-  begin
-    if not exists (
-      select 1 from pg_constraint where conname = 'participants_race_class_valida'
-    ) then
-      alter table participants add constraint participants_race_class_valida
-        check (
-          (category = 'arrancones' and race_class in ('4x4','4_cil','8_cil','bracket'))
-          or (category <> 'arrancones' and race_class is null)
-        );
-    end if;
-  end
-  $$;
-`;
+
+// Un CHECK es DDL: no admite parámetros, así que la lista va como literal.
+// Los ids son constantes nuestras, pero se validan para que nadie meta comillas.
+const claseInvalida = ARRANCONES_CLASS_IDS.find((id) => !/^[a-z0-9_]+$/.test(id));
+if (claseInvalida) {
+  throw new Error(`Id de clase inválido en ARRANCONES_CLASSES: "${claseInvalida}"`);
+}
+const listaClases = ARRANCONES_CLASS_IDS.map((id) => `'${id}'`).join(',');
+
+await sql.query('alter table participants drop constraint if exists participants_race_class_valida');
+await sql.query(`
+  alter table participants add constraint participants_race_class_valida
+    check (
+      (category = 'arrancones' and race_class in (${listaClases}))
+      or (category <> 'arrancones' and race_class is null)
+    )
+`);
 
 await sql`create index if not exists participants_category_idx on participants (category)`;
 await sql`create index if not exists participants_status_idx   on participants (status)`;

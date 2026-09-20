@@ -302,6 +302,11 @@ export default function Register() {
                       }`}
                     >
                       {klass.label}
+                      {klass.hint && (
+                        <span className="mt-0.5 block text-xs font-normal text-white/40">
+                          {klass.hint}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

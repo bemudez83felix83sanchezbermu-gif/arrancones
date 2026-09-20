@@ -166,7 +166,7 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
               <option value="">Elige la clase</option>
               {Object.values(ARRANCONES_CLASSES).map((klass) => (
                 <option key={klass.id} value={klass.id}>
-                  {klass.label}
+                  {klass.hint ? `${klass.label} · ${klass.hint}` : klass.label}
                 </option>
               ))}
             </select>
