@@ -1,9 +1,10 @@
 import {
-  CATEGORIES,
-  STATUSES,
+  categoryFee,
+  categoryLabel,
   folio,
   formatPhone,
   raceClassLabel,
+  statusLabel,
 } from '../../shared/participants.js';
 import { formatDateTime } from './adminData.js';
 
@@ -15,7 +16,7 @@ const COLUMNS = [
   { label: 'Folio', width: 9, pdfWidth: 40, get: (row) => folio(row.id) },
   { label: 'Piloto', width: 26, pdfWidth: 90, get: (row) => row.pilot_name },
   { label: 'Copiloto', width: 22, pdfWidth: 80, get: (row) => row.copilot_name ?? '' },
-  { label: 'Categoría', width: 12, pdfWidth: 55, get: (row) => CATEGORIES[row.category].label },
+  { label: 'Categoría', width: 12, pdfWidth: 55, get: (row) => categoryLabel(row.category) },
   {
     label: 'Clase',
     width: 18,
@@ -27,8 +28,8 @@ const COLUMNS = [
   { label: 'Municipio', width: 20, pdfWidth: 75, get: (row) => row.city },
   { label: 'WhatsApp', width: 16, pdfWidth: 75, get: (row) => formatPhone(row.phone) },
   { label: 'Red social', width: 28, pdfWidth: 90, get: (row) => row.social ?? '' },
-  { label: 'Estatus', width: 12, pdfWidth: 55, get: (row) => STATUSES[row.status].label },
-  { label: 'Cuota', width: 10, pdfWidth: 45, get: (row) => CATEGORIES[row.category].fee, numeric: true },
+  { label: 'Estatus', width: 12, pdfWidth: 55, get: (row) => statusLabel(row.status) },
+  { label: 'Cuota', width: 10, pdfWidth: 45, get: (row) => categoryFee(row.category), numeric: true },
   { label: 'Personas', width: 10, pdfWidth: 45, get: (row) => (row.copilot_name ? 2 : 1), numeric: true },
   { label: 'Notas', width: 30, pdfWidth: 100, get: (row) => row.notes ?? '' },
   { label: 'Registrado', width: 20, pdfWidth: 85, get: (row) => formatDateTime(row.created_at) },
@@ -41,10 +42,14 @@ export const triggerDownload = (blob, filename) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  link.rel = 'noopener';
+  // Safari viejo (iOS 12 y antes) ignora download: ahí se abre en otra pestaña.
+  if (!('download' in link)) link.target = '_blank';
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Safari cancela la descarga si el object URL se libera de inmediato.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 };
 
 /* ---------- Excel (.xlsx) ---------- */
@@ -136,7 +141,7 @@ export async function downloadPdf(rows, name = 'participantes') {
     },
   });
 
-  doc.save(`${name}-${fileStamp()}.pdf`);
+  triggerDownload(doc.output('blob'), `${name}-${fileStamp()}.pdf`);
 }
 
 /* ---------- CSV (compatibilidad, no expuesto en la UI) ---------- */

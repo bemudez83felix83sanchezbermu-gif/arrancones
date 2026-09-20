@@ -2,15 +2,24 @@ export const EVENT = {
   name: 'Car Fest 2K26',
   organizer: 'ALP Racing',
   tagline: '¡Vive la pasión, siente la velocidad!',
-  slogan: '2 días de adrenalina',
+  slogan: '3 días de adrenalina',
   city: 'Puerto Peñasco, Sonora',
   venue: 'Centro de Convenciones',
-  startDate: '2026-09-26T10:00:00-07:00',
+  // Arranque del fest: salida del desfile. Lo usa la cuenta regresiva del Hero.
+  startDate: '2026-09-25T17:30:00-07:00',
   endDate: '2026-09-27T22:00:00-07:00',
-  displayDate: '26 y 27 de Septiembre 2026',
+  displayDate: '25, 26 y 27 de Septiembre 2026',
   days: [
     {
       label: 'Día 1',
+      date: 'Viernes 25 de Septiembre',
+      title: 'Desfile por la ciudad',
+      description:
+        "Arrancamos el fin de semana con un desfile por la ciudad: salimos a las 5:30 pm de Sam's Club Puerto Peñasco y terminamos en la Calle 12.",
+      activities: ['Desfile', '5:30 pm', "Sam's Club → Calle 12"],
+    },
+    {
+      label: 'Día 2',
       date: 'Sábado 26 de Septiembre',
       title: 'Drift & Car Show',
       description:
@@ -18,7 +27,7 @@ export const EVENT = {
       activities: ['Drift', 'Car Show', 'Exhibiciones'],
     },
     {
-      label: 'Día 2',
+      label: 'Día 3',
       date: 'Domingo 27 de Septiembre',
       title: 'Arrancones',
       description:

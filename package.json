@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "db:setup": "node --env-file-if-exists=.env.local scripts/db-setup.mjs",
     "check": "node scripts/check.mjs",
-    "check:taquilla": "node scripts/check-taquilla.mjs"
+    "check:taquilla": "node scripts/check-taquilla.mjs",
+    "propuesta:pdf": "node scripts/propuesta-pdf.mjs",
+    "fpv:pdf": "node scripts/fpv-pdf.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

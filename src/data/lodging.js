@@ -16,10 +16,16 @@
 export const RESERVATIONS_WHATSAPP = '526381271670';
 export const RESERVATIONS_WHATSAPP_DISPLAY = '+52 638 127 1670';
 
+// PDF para clientes; se regenera con `npm run propuesta:pdf`.
+export const PROPOSAL_PDF = '/propuesta/CarFest2K26-Propuesta-Hospedaje.pdf';
+
+export function whatsappLink(message) {
+  return `https://wa.me/${RESERVATIONS_WHATSAPP}?text=${encodeURIComponent(message)}`;
+}
+
 export function reservationLink(item, extra = '') {
   const base = `Hola, me interesa reservar en ${item.name} para el Car Fest 2K26.`;
-  const message = extra ? `${base} ${extra}` : base;
-  return `https://wa.me/${RESERVATIONS_WHATSAPP}?text=${encodeURIComponent(message)}`;
+  return whatsappLink(extra ? `${base} ${extra}` : base);
 }
 
 const mapsSearch = (query) =>
@@ -111,24 +117,23 @@ export const hotels = [
   },
   {
     slug: 'hotel-vinas-del-mar',
-    name: 'Hotel Viñas del Mar',
+    name: 'Hotel Viña del Mar',
     tagline: 'Frente al malecón, ideal para parejas y familias.',
     badge: 'Malecón',
     folder: '/hospedaje/hoteles/hotel-vinas-del-mar',
     mapsUrl: 'https://maps.app.goo.gl/Qhb1k9LVJDnSjAtW6',
-    notes: ['Mínimo 2 noches para reservar con tarifa Car Fest.'],
     rooms: [
       {
         type: 'Habitación sencilla',
         capacity: '2 personas',
         price: 1500,
-        priceStrike: 1750,
+        priceStrike: 1700,
       },
       {
         type: 'Habitación doble',
         capacity: '4 personas',
-        price: 1700,
-        priceStrike: 1950,
+        price: 1500,
+        priceStrike: 1700,
       },
     ],
   },
@@ -185,7 +190,34 @@ export const activities = [
     externalLabel: 'Ver sitio oficial',
     highlights: [
       'Salidas programadas durante el fin de semana del evento.',
-      'Reserva tu pulsera con la agencia y aparta lugar sin filas.',
+      'Reserva tu paquete con la agencia y aparta lugar sin filas.',
+    ],
+    // Precio público por persona, en MXN.
+    packages: [
+      {
+        id: 'cena-barra-libre',
+        name: 'Cena y Barra Libre',
+        price: 700,
+        details: 'Adultos: cena de fajitas de pollo y barra libre. Adolescentes: cena, soda y agua.',
+      },
+      {
+        id: 'barra-libre',
+        name: 'Barra Libre',
+        price: 600,
+        details: 'Adultos: barra libre. Adolescentes: sodas y agua.',
+      },
+      {
+        id: 'solo-cena',
+        name: 'Solo Cena',
+        price: 600,
+        details: 'Cena a bordo, sin barra libre.',
+      },
+      {
+        id: 'ninos',
+        name: 'Paquete Niños',
+        price: 300,
+        details: 'Agua, sodas y pizza. De 3 a 11 años.',
+      },
     ],
   },
 ];

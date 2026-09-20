@@ -40,7 +40,7 @@ export default function Location() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">Duración</span>
-                <span className="text-white">2 días completos</span>
+                <span className="text-white">{EVENT.days.length} días</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">Organiza</span>

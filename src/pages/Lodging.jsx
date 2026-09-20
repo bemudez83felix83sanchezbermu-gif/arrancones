@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   BedDouble,
+  Download,
   ExternalLink,
   Home,
   Info,
@@ -13,7 +14,14 @@ import {
 } from 'lucide-react';
 import { Link } from '../router';
 import LodgingImage from '../components/LodgingImage';
-import { activities, hotels, houses, reservationLink, restaurants } from '../data/lodging';
+import {
+  PROPOSAL_PDF,
+  activities,
+  hotels,
+  houses,
+  reservationLink,
+  restaurants,
+} from '../data/lodging';
 
 const TABS = [
   { id: 'hospedaje', label: 'Hospedaje', icon: BedDouble },
@@ -170,6 +178,13 @@ function Hero() {
           del evento. Aprovecha tarifas preferentes por venir desde fuera y
           asegura tu lugar antes de que se agote.
         </p>
+        <a
+          href={PROPOSAL_PDF}
+          download
+          className="mt-7 inline-flex items-center gap-2 rounded-full bg-racing-gold px-5 py-3 text-xs font-bold uppercase tracking-wider text-racing-asphalt transition hover:brightness-110"
+        >
+          <Download size={15} /> Descargar propuesta en PDF
+        </a>
       </motion.div>
     </section>
   );
@@ -220,7 +235,7 @@ function LodgingTab() {
       <div>
         <SectionHeading
           eyebrow="Casas"
-          title="Casas Thomas en Comonfort"
+          title="Casas privadas en Comonfort"
           description="Estancias privadas tipo Airbnb, ideales para grupos y familias. Consulta disponibilidad y tarifas por noche con nosotros."
         />
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -414,7 +429,7 @@ function GenericGrid({ items, kind }) {
   const description =
     kind === 'gastronomia'
       ? 'Reserva mesa con la agencia y garantiza tu lugar durante el fin de semana del evento.'
-      : 'Actividades coordinadas para el fin de semana del Car Fest. Reserva tu pulsera con nosotros.';
+      : 'Actividades coordinadas para el fin de semana del Car Fest. Reserva tu paquete con nosotros.';
 
   return (
     <div>

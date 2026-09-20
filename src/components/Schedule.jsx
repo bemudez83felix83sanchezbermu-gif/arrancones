@@ -11,7 +11,7 @@ export default function Schedule() {
             Programa
           </span>
           <h2 className="section-heading mt-3">
-            2 días de <span className="text-racing-red">adrenalina</span>
+            {EVENT.days.length} días de <span className="text-racing-red">adrenalina</span>
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">
             Un fin de semana pensado para que no te pierdas nada. Aquí está el
@@ -19,7 +19,7 @@ export default function Schedule() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {EVENT.days.map((d, i) => (
             <motion.article
               key={d.label}
