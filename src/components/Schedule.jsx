@@ -99,9 +99,9 @@ export default function Schedule() {
                     </div>
                   )}
 
-                  {d.mapsQuery && (
+                  {(d.mapsUrl || d.mapsQuery) && (
                     <a
-                      href={MAPS_URL(d.mapsQuery)}
+                      href={d.mapsUrl || MAPS_URL(d.mapsQuery)}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-auto inline-flex items-center gap-2 self-start pt-6 text-xs font-semibold uppercase tracking-wider text-white/70 transition hover:text-racing-red"

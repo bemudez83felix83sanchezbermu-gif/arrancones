@@ -159,7 +159,8 @@ export default function Register() {
           <h1 className="display mt-6 text-4xl uppercase md:text-5xl">¡Registro recibido!</h1>
           <p className="mt-3 text-white/60">
             Ya estás en la lista de {CATEGORIES[done.category].label}. Te esperamos el{' '}
-            {CATEGORIES[done.category].day.toLowerCase()} en {EVENT.venue}.
+            {CATEGORIES[done.category].day.toLowerCase()} en{' '}
+            {done.category === 'arrancones' ? EVENT.days[2].place : EVENT.venue}.
           </p>
 
           <dl className="mt-8 space-y-3 text-left text-sm">

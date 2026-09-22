@@ -7,6 +7,7 @@ import {
   MapPin,
   MessageCircle,
   Ticket,
+  Timer,
 } from 'lucide-react';
 import { EVENT, MAPS_URL, WHATSAPP_URL } from '../data/event';
 import { useEventPhase } from '../lib/eventPhase';
@@ -14,14 +15,8 @@ import { Link } from '../router';
 import { CATEGORIES, openCategoryIds } from '../../shared/participants';
 
 const parade = EVENT.days[0];
-const venueDays = EVENT.days.filter((day) => day.place === EVENT.venue);
-const venueDay = venueDays[0] ?? EVENT.days[1];
-
-// "Sábado 10:00 am – 7:00 pm · Domingo 9:00 am – 7:00 pm"
-const venueHours = venueDays
-  .filter((day) => day.time)
-  .map((day) => `${day.date.split(' ')[0]} ${day.time}`)
-  .join(' · ');
+const showDay = EVENT.days[1];
+const raceDay = EVENT.days[2];
 
 // "Drift y Car Show hasta el viernes 25 · Arrancones hasta el sábado 26"
 function registrationText() {
@@ -63,9 +58,15 @@ function useFacts() {
     },
     {
       icon: MapPin,
-      title: 'Drift, car show y arrancones',
-      text: `${EVENT.venue} de ${EVENT.city}.${venueHours ? ` ${venueHours}.` : ''}`,
-      action: { label: 'Cómo llegar', href: MAPS_URL(venueDay.mapsQuery), external: true },
+      title: 'Drift y car show',
+      text: `${showDay.place} de ${EVENT.city}. ${showDay.date.split(' ')[0]} ${showDay.time}.`,
+      action: { label: 'Cómo llegar', href: MAPS_URL(showDay.mapsQuery), external: true },
+    },
+    {
+      icon: Timer,
+      title: 'Arrancones',
+      text: `${raceDay.place}. ${raceDay.date.split(' ')[0]} ${raceDay.time}.`,
+      action: { label: 'Cómo llegar', href: raceDay.mapsUrl ?? MAPS_URL(raceDay.mapsQuery), external: true },
     },
   ];
 
@@ -160,7 +161,7 @@ export default function EventIntro() {
               <strong className="text-white">desfile por la ciudad</strong>; el sábado es de{' '}
               <strong className="text-white">drift y car show</strong> con exóticos, tuning,
               lowrider, off-road y bikers; y el domingo, un día completo de{' '}
-              <strong className="text-white">arrancones</strong> en el Centro de Convenciones.
+              <strong className="text-white">arrancones</strong> en la {raceDay.place}.
             </p>
             <p className="mt-4 max-w-xl text-lg text-white/70">
               Organiza <strong className="text-white">ALP Racing</strong>, en compañía de los mejores equipos y pilotos del noroeste.

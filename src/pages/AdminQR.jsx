@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCodeStyling from 'qr-code-styling';
-import { ArrowLeft, Download, FileImage, Loader2, Printer, QrCode, Sparkles } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { ArrowLeft, Download, FileImage, ImageDown, Loader2, Printer, QrCode, Sparkles } from 'lucide-react';
 import { EVENT } from '../data/event';
 import { useAuth } from '../lib/useAuth';
 import { Link, navigate } from '../router';
@@ -23,6 +24,8 @@ export default function AdminQR() {
   const [url, setUrl] = useState(DEFAULT_URL);
   const [sizeId, setSizeId] = useState('full');
   const [withLogo, setWithLogo] = useState(true);
+  const [downloadingPoster, setDownloadingPoster] = useState(false);
+  const posterRef = useRef(null);
   const preset = useMemo(
     () => SIZE_PRESETS.find((s) => s.id === sizeId) ?? SIZE_PRESETS[1],
     [sizeId],
@@ -40,9 +43,33 @@ export default function AdminQR() {
     );
   }
 
-  const downloadSVG = () => {
-    const svg = document.getElementById('qr-poster-svg');
-    if (!svg) return;
+  // El <image> del logo dentro del QR apunta a una ruta relativa (/favicon.svg);
+  // funciona en pantalla porque el navegador la resuelve contra el sitio, pero
+  // un SVG descargado y abierto suelto (file://) no puede resolverla y el logo
+  // sale como un hueco en blanco. La incrustamos como data URI para que el
+  // archivo quede autocontenido.
+  const inlineLogoAsDataUri = async (svg) => {
+    const image = svg.querySelector('image');
+    if (!image) return;
+    const href = image.getAttribute('href') || image.getAttribute('xlink:href');
+    if (!href || href.startsWith('data:')) return;
+    const res = await fetch(href, { cache: 'force-cache' });
+    const blob = await res.blob();
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    image.setAttribute('href', dataUrl);
+    image.setAttribute('xlink:href', dataUrl);
+  };
+
+  const downloadSVG = async () => {
+    const original = document.getElementById('qr-poster-svg');
+    if (!original) return;
+    const svg = original.cloneNode(true);
+    await inlineLogoAsDataUri(svg);
     const serialized = new XMLSerializer().serializeToString(svg);
     const blob = new Blob([`<?xml version="1.0" encoding="UTF-8"?>\n${serialized}`], {
       type: 'image/svg+xml;charset=utf-8',
@@ -55,6 +82,26 @@ export default function AdminQR() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
+  };
+
+  const downloadPosterPNG = async () => {
+    if (!posterRef.current || downloadingPoster) return;
+    setDownloadingPoster(true);
+    try {
+      const canvas = await html2canvas(posterRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+      });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = 'qr-album-carfest2k26.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setDownloadingPoster(false);
+    }
   };
 
   return (
@@ -82,6 +129,19 @@ export default function AdminQR() {
             <button type="button" onClick={downloadSVG} className={BUTTON.ghost}>
               <Download size={14} />
               <span className="hidden sm:inline">Descargar SVG</span>
+            </button>
+            <button
+              type="button"
+              onClick={downloadPosterPNG}
+              disabled={downloadingPoster}
+              className={BUTTON.ghost}
+            >
+              {downloadingPoster ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <ImageDown size={14} />
+              )}
+              <span className="hidden sm:inline">Descargar PNG</span>
             </button>
             <button type="button" onClick={() => window.print()} className={BUTTON.primary}>
               <Printer size={16} /> Imprimir
@@ -170,7 +230,10 @@ export default function AdminQR() {
         </aside>
 
         <section className="flex items-start justify-center">
-          <div className="print-poster mx-auto flex flex-col items-center border border-white/10 bg-white p-8 text-[#0A0A0A] shadow-2xl">
+          <div
+            ref={posterRef}
+            className="print-poster mx-auto flex flex-col items-center border border-white/10 bg-white p-8 text-[#0A0A0A] shadow-2xl"
+          >
             <Poster url={url} withLogo={withLogo} sizeClass={preset.poster} qrSize={preset.qr} />
           </div>
         </section>

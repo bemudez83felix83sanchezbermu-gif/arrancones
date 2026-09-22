@@ -33,7 +33,7 @@ export const EVENT = {
       date: 'Sábado 26 de Septiembre',
       title: 'Drift & Car Show',
       description:
-        'Exhibiciones de drift, competencia de mejor auto en múltiples categorías, exposición de tuning, lowrider, off-road, exóticos y bikers.',
+        'Exhibiciones de drift, exposición de tuning, lowrider, off-road, exóticos y bikers.',
       activities: ['Drift', 'Car Show', 'Exhibiciones'],
       time: '10:00 am – 7:00 pm',
       place: 'Centro de Convenciones',
@@ -53,8 +53,10 @@ export const EVENT = {
         { time: '11:30 am – 12:00 pm', label: 'Sorteo' },
         { time: '12:00 – 7:00 pm', label: 'Arrancones' },
       ],
-      place: 'Centro de Convenciones',
-      mapsQuery: 'Centro de Convenciones, Puerto Peñasco, Sonora, Mexico',
+      place: 'Pista del Aeropuerto',
+      mapsQuery: 'Pista del Aeropuerto, Puerto Peñasco, Sonora, Mexico',
+      // Enlace directo que mandó el organizador: el query de arriba no cae exacto en la pista.
+      mapsUrl: 'https://maps.app.goo.gl/HSEz4VEEvRUvkiYh7',
     },
   ],
   categories: [

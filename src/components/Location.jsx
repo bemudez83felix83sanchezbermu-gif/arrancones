@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Flag, MapPin, Navigation } from 'lucide-react';
+import { Flag, MapPin, Navigation, Timer } from 'lucide-react';
 import { EVENT, MAPS_URL } from '../data/event';
 
 const MAP_QUERY = encodeURIComponent(
   `${EVENT.venue}, ${EVENT.city}, Mexico`,
 );
 const PARADE = EVENT.days[0];
+const RACE_DAY = EVENT.days[2];
 
 export default function Location() {
   return (
@@ -49,6 +50,12 @@ export default function Location() {
                   {PARADE.date.split(' ')[0]} {PARADE.time} · {PARADE.place}
                 </span>
               </div>
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="shrink-0 text-white/50">Arrancones</span>
+                <span className="text-right text-white">
+                  {RACE_DAY.date.split(' ')[0]} {RACE_DAY.time} · {RACE_DAY.place}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">Organiza</span>
                 <span className="text-white">{EVENT.organizer}</span>
@@ -72,6 +79,15 @@ export default function Location() {
             >
               <Flag size={16} />
               Salida del desfile
+            </a>
+            <a
+              href={RACE_DAY.mapsUrl ?? MAPS_URL(RACE_DAY.mapsQuery)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost mt-3 w-full"
+            >
+              <Timer size={16} />
+              Pista de arrancones
             </a>
           </motion.div>
 
