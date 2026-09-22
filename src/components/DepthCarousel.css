@@ -108,9 +108,12 @@
   transform: translateX(-50%);
   z-index: 3000;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
+  max-width: calc(100% - 32px);
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: 20px;
   background: rgba(14, 16, 22, 0.4);
   backdrop-filter: blur(6px);
 }

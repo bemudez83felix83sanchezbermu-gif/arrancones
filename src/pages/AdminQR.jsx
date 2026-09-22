@@ -259,10 +259,16 @@ export default function AdminQR() {
   );
 }
 
-function Poster({ url, withLogo, sizeClass, qrSize }) {
-  const shortUrl = url.replace(/^https?:\/\//, '');
+// Plantilla exterior del cartel (encabezado, marco del QR, pasos y pie).
+// La comparten el QR simple de arriba y el QR con identidad de abajo: el
+// contenido del QR se pasa como children para que cada sección meta el suyo.
+function PosterFrame({ url, sizeClass, width, qrBoxBg = '#FFFFFF', children }) {
+  const shortUrl = (url || '').replace(/^https?:\/\//, '');
   return (
-    <div className={`flex ${sizeClass} max-w-full flex-col items-center gap-6 px-2`}>
+    <div
+      className={`flex max-w-full flex-col items-center gap-6 px-2 ${sizeClass ?? ''}`}
+      style={width ? { width } : undefined}
+    >
       <div className="w-full border-b-2 border-[#0A0A0A]/10 pb-4 text-center">
         <span className="text-[11px] font-bold uppercase tracking-[0.32em] text-racing-red">
           {EVENT.organizer} presenta
@@ -278,26 +284,11 @@ function Poster({ url, withLogo, sizeClass, qrSize }) {
         </p>
       </div>
 
-      <div className="relative flex items-center justify-center rounded-sm border-8 border-[#0A0A0A] bg-white p-4">
-        <QRCodeSVG
-          id="qr-poster-svg"
-          value={url || 'https://carfestrp2026.vercel.app/album/subir'}
-          size={qrSize}
-          level="H"
-          bgColor="#FFFFFF"
-          fgColor="#0A0A0A"
-          marginSize={0}
-          imageSettings={
-            withLogo
-              ? {
-                  src: '/favicon.svg',
-                  height: Math.round(qrSize * 0.18),
-                  width: Math.round(qrSize * 0.18),
-                  excavate: true,
-                }
-              : undefined
-          }
-        />
+      <div
+        className="relative flex items-center justify-center rounded-sm border-8 border-[#0A0A0A] p-4"
+        style={{ background: qrBoxBg }}
+      >
+        {children}
       </div>
 
       <div className="w-full text-center">
@@ -328,6 +319,32 @@ function Poster({ url, withLogo, sizeClass, qrSize }) {
         </span>
       </div>
     </div>
+  );
+}
+
+function Poster({ url, withLogo, sizeClass, qrSize }) {
+  return (
+    <PosterFrame url={url} sizeClass={sizeClass}>
+      <QRCodeSVG
+        id="qr-poster-svg"
+        value={url || 'https://carfestrp2026.vercel.app/album/subir'}
+        size={qrSize}
+        level="H"
+        bgColor="#FFFFFF"
+        fgColor="#0A0A0A"
+        marginSize={0}
+        imageSettings={
+          withLogo
+            ? {
+                src: '/favicon.svg',
+                height: Math.round(qrSize * 0.18),
+                width: Math.round(qrSize * 0.18),
+                excavate: true,
+              }
+            : undefined
+        }
+      />
+    </PosterFrame>
   );
 }
 
@@ -362,6 +379,7 @@ function StyledQRSection({ url }) {
   const holderRef = useRef(null);
   const qrRef = useRef(null);
   const logoInputRef = useRef(null);
+  const frameRef = useRef(null);
 
   const [dotType, setDotType] = useState('extra-rounded');
   const [cornerSquareType, setCornerSquareType] = useState('extra-rounded');
@@ -371,6 +389,7 @@ function StyledQRSection({ url }) {
   const [logoSrc, setLogoSrc] = useState('/favicon.svg');
   const [logoSize, setLogoSize] = useState(0.32);
   const [size, setSize] = useState(560);
+  const [downloadingFrame, setDownloadingFrame] = useState(false);
 
   const preset = useMemo(
     () => COLOR_PRESETS.find((p) => p.id === presetId) ?? COLOR_PRESETS[0],
@@ -424,6 +443,26 @@ function StyledQRSection({ url }) {
 
   const download = (ext) => {
     qrRef.current?.download({ name: `qr-carfest2k26-${presetId}`, extension: ext });
+  };
+
+  const downloadFramePNG = async () => {
+    if (!frameRef.current || downloadingFrame) return;
+    setDownloadingFrame(true);
+    try {
+      const canvas = await html2canvas(frameRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+      });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `qr-album-carfest2k26-${presetId}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setDownloadingFrame(false);
+    }
   };
 
   const onLogoFile = (e) => {
@@ -595,8 +634,9 @@ function StyledQRSection({ url }) {
           )}
         </Panel>
 
-        <Panel title="Descargar">
-          <div className="grid grid-cols-3 gap-2">
+        <Panel title="Descargar" subtitle="Solo el QR, o el cartel completo con la plantilla">
+          <span className="block text-xs uppercase tracking-[0.18em] text-white/50">Solo el QR</span>
+          <div className="mt-1.5 grid grid-cols-3 gap-2">
             <button type="button" onClick={() => download('png')} className={BUTTON.primary}>
               <Download size={14} /> PNG
             </button>
@@ -607,15 +647,34 @@ function StyledQRSection({ url }) {
               <Download size={14} /> JPG
             </button>
           </div>
+
+          <span className="mt-5 block text-xs uppercase tracking-[0.18em] text-white/50">
+            Cartel completo
+          </span>
+          <button
+            type="button"
+            onClick={downloadFramePNG}
+            disabled={downloadingFrame}
+            className={`${BUTTON.ghost} mt-1.5 w-full justify-center`}
+          >
+            {downloadingFrame ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <ImageDown size={14} />
+            )}
+            Descargar PNG del cartel
+          </button>
         </Panel>
       </aside>
 
       <div className="flex items-start justify-center">
         <div
-          className="flex items-center justify-center border border-white/10 p-6 shadow-2xl"
-          style={{ background: preset.bg }}
+          ref={frameRef}
+          className="mx-auto flex flex-col items-center border border-white/10 bg-white p-8 text-[#0A0A0A] shadow-2xl"
         >
-          <div ref={holderRef} />
+          <PosterFrame url={url} width={size + 160} qrBoxBg={preset.bg}>
+            <div ref={holderRef} />
+          </PosterFrame>
         </div>
       </div>
     </div>

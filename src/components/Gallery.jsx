@@ -70,7 +70,7 @@ export default function Gallery() {
           minRadius={360}
           maxVerticalRotationDeg={12}
           segments={SEGMENTS}
-          dragSensitivity={9}
+          dragSensitivity={1}
           dragDampening={0.85}
           overlayBlurColor="#1A1A1A"
           grayscale={false}

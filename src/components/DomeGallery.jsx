@@ -4,7 +4,9 @@ import './DomeGallery.css';
 
 const DEFAULTS = {
   maxVerticalRotationDeg: 5,
-  dragSensitivity: 20,
+  // Multiplicador sobre el "1:1" (1 = la cara frontal de la esfera sigue al
+  // dedo exactamente; más alto = más lento/con juego, más bajo = más ágil).
+  dragSensitivity: 1,
   enlargeTransitionMs: 300,
   segments: 35
 };
@@ -287,12 +289,14 @@ export default function DomeGallery({
           const dist2 = dxTotal * dxTotal + dyTotal * dyTotal;
           if (dist2 > 16) movedRef.current = true;
         }
-        const nextX = clamp(
-          startRotRef.current.x - dyTotal / dragSensitivity,
-          -maxVerticalRotationDeg,
-          maxVerticalRotationDeg
-        );
-        const nextY = wrapAngleSigned(startRotRef.current.y + dxTotal / dragSensitivity);
+        // Píxeles por grado para que la cara frontal de la esfera siga al
+        // dedo 1:1. Antes era un valor fijo sin relación con el radio real,
+        // así que en radios chicos (mobile) el giro se quedaba corto respecto
+        // al arrastre y se sentía con "juego" / poco fluido.
+        const radius = lockedRadiusRef.current || minRadius;
+        const unit = ((radius * Math.PI) / 180) * dragSensitivity;
+        const nextX = clamp(startRotRef.current.x - dyTotal / unit, -maxVerticalRotationDeg, maxVerticalRotationDeg);
+        const nextY = wrapAngleSigned(startRotRef.current.y + dxTotal / unit);
         if (rotationRef.current.x !== nextX || rotationRef.current.y !== nextY) {
           rotationRef.current = { x: nextX, y: nextY };
           applyTransform(nextX, nextY);
@@ -305,8 +309,8 @@ export default function DomeGallery({
           let vy = vMagY * dirY;
           if (Math.abs(vx) < 0.001 && Math.abs(vy) < 0.001 && Array.isArray(movement)) {
             const [mx, my] = movement;
-            vx = clamp((mx / dragSensitivity) * 0.035, -2, 2);
-            vy = clamp((my / dragSensitivity) * 0.035, -2, 2);
+            vx = clamp((mx / unit) * 0.035, -2, 2);
+            vy = clamp((my / unit) * 0.035, -2, 2);
           }
           if (Math.abs(vx) > 0.005 || Math.abs(vy) > 0.005) startInertia(vx, vy);
           if (movedRef.current) lastDragEndAt.current = performance.now();
