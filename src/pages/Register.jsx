@@ -5,6 +5,8 @@ import { EVENT, WHATSAPP_URL } from '../data/event';
 import {
   ARRANCONES_CLASSES,
   CATEGORIES,
+  isCategoryOpen,
+  openCategoryIds,
   raceClassLabel,
   validateParticipant,
 } from '../../shared/participants';
@@ -24,6 +26,7 @@ const EMPTY = {
   city: '',
   social: '',
   vehicle_photo: null,
+  vehicle_thumb: null,
 };
 
 function Field({ label, hint, error, optional, children }) {
@@ -63,6 +66,7 @@ export default function Register() {
   const [photoFailed, setPhotoFailed] = useState(false);
 
   const category = CATEGORIES[form.category];
+  const allClosed = openCategoryIds().length === 0;
 
   const set = (key) => (event) => {
     const { value } = event.target;
@@ -81,6 +85,7 @@ export default function Register() {
   const freeCity = form.state === ESTADO_OTRO;
 
   const pickCategory = (id) => {
+    if (!isCategoryOpen(id)) return;
     setForm((prev) => ({
       ...prev,
       category: id,
@@ -227,22 +232,44 @@ export default function Register() {
         </p>
       </header>
 
+      {allClosed ? (
+        <div className="mt-10 border border-white/10 bg-racing-smoke p-6 md:p-8">
+          <h2 className="display text-3xl uppercase text-white">Inscripciones cerradas</h2>
+          <p className="mt-3 text-white/60">
+            Ya cerramos el registro en línea de todas las categorías. Si tienes dudas, escríbenos
+            por WhatsApp.
+          </p>
+          <a
+            href={WHATSAPP_URL('Hola! Tengo una duda sobre las inscripciones del Car Fest 2K26.')}
+            target="_blank"
+            rel="noreferrer"
+            className="btn-racing mt-6"
+          >
+            Escribir por WhatsApp
+          </a>
+        </div>
+      ) : (
       <form onSubmit={submit} className="mt-10 space-y-10">
         <section>
           <h2 className="display text-2xl uppercase text-white">1 · Categoría</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {Object.values(CATEGORIES).map((cat) => {
               const active = form.category === cat.id;
+              const open = isCategoryOpen(cat.id);
               return (
                 <button
                   type="button"
                   key={cat.id}
                   onClick={() => pickCategory(cat.id)}
+                  disabled={!open}
+                  aria-disabled={!open}
                   data-invalid={errors.category ? 'true' : undefined}
                   className={`group relative overflow-hidden border p-5 text-left transition ${
-                    active
-                      ? 'border-racing-red bg-racing-red/10'
-                      : 'border-white/10 bg-racing-smoke hover:border-white/30'
+                    !open
+                      ? 'cursor-not-allowed border-white/5 bg-racing-smoke/40 opacity-50'
+                      : active
+                        ? 'border-racing-red bg-racing-red/10'
+                        : 'border-white/10 bg-racing-smoke hover:border-white/30'
                   }`}
                 >
                   <span
@@ -259,6 +286,13 @@ export default function Register() {
                   </span>
                   <span className="mt-1 block text-[11px] uppercase tracking-wider text-white/35">
                     {cat.day.replace(' de septiembre', '')}
+                  </span>
+                  <span
+                    className={`mt-2 block text-[11px] font-semibold uppercase tracking-wider ${
+                      open ? 'text-racing-gold' : 'text-white/50'
+                    }`}
+                  >
+                    {open ? `Cierra el ${cat.closesLabel}` : `Cerró el ${cat.closesLabel}`}
                   </span>
                 </button>
               );
@@ -472,8 +506,8 @@ export default function Register() {
               value={form.vehicle_photo}
               error={errors.vehicle_photo}
               onFail={setPhotoFailed}
-              onChange={(dataUrl) => {
-                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl }));
+              onChange={(dataUrl, thumbDataUrl) => {
+                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl, vehicle_thumb: thumbDataUrl }));
                 setErrors((prev) =>
                   prev.vehicle_photo ? { ...prev, vehicle_photo: undefined } : prev,
                 );
@@ -529,6 +563,7 @@ export default function Register() {
           Al enviar aceptas que el equipo de {EVENT.organizer} te contacte por WhatsApp.
         </p>
       </form>
+      )}
     </div>
   );
 }

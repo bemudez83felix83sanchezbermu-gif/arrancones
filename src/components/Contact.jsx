@@ -28,8 +28,8 @@ export default function Contact() {
             No te <span className="text-racing-red">quedes fuera</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-white/70">
-            Escríbenos por WhatsApp para participar, patrocinar, poner un stand o
-            resolver cualquier duda del evento.
+            Escríbenos por WhatsApp para resolver cualquier duda del evento,
+            inscribir tu auto, patrocinar o poner un stand.
           </p>
 
           <a
@@ -67,7 +67,7 @@ export default function Contact() {
           </div>
 
           <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/40">
-            ¡Es tu momento de acelerar tu marca!
+            ¡Nos vemos en Puerto Peñasco!
           </p>
         </motion.div>
       </div>

@@ -27,7 +27,7 @@ export const listParticipants = () =>
   request('/api/participants').then((data) => data.participants ?? []);
 
 // Competitors y el domo de la galería montan juntos en la landing: comparten la
-// petición en vuelo en vez de bajar dos veces las fotos base64.
+// petición en vuelo en vez de pedir dos veces la lista.
 let publicParticipantsInFlight = null;
 
 export const listPublicParticipants = () => {

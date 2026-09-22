@@ -14,7 +14,7 @@ import {
 const toCarouselItem = (participant) => ({
   key: `p-${participant.id}`,
   name: participant.vehicle_name,
-  image: participant.vehicle_photo,
+  image: participant.photo_url,
   alt: `${participant.vehicle_name} — ${participant.pilot_name}`,
   pilot: participant.pilot_name,
   category: participant.category,

@@ -15,6 +15,7 @@ const EDITABLE = [
   'status',
   'notes',
   'vehicle_photo',
+  'vehicle_thumb',
 ];
 
 export default withErrors(async (req, res) => {
@@ -42,6 +43,13 @@ export default withErrors(async (req, res) => {
     const { ok, errors, value } = validateParticipant(merged);
     if (!ok) return json(res, 422, { error: 'Revisa los datos', errors });
 
+    // La miniatura sigue a la foto: si cambia la foto sin miniatura nueva, se
+    // borra la vieja para que la landing no siga mostrando el auto anterior.
+    const photo = value.vehicle_photo ?? current.vehicle_photo ?? null;
+    const photoChanged = photo !== current.vehicle_photo;
+    const thumbSent = value.vehicle_thumb && value.vehicle_thumb !== current.vehicle_thumb;
+    const thumb = thumbSent ? value.vehicle_thumb : photoChanged ? null : current.vehicle_thumb;
+
     const [participant] = await sql`
       update participants set
         pilot_name    = ${value.pilot_name},
@@ -55,7 +63,8 @@ export default withErrors(async (req, res) => {
         social        = ${value.social},
         status        = ${value.status},
         notes         = ${value.notes},
-        vehicle_photo = ${value.vehicle_photo ?? current.vehicle_photo ?? null},
+        vehicle_photo = ${photo},
+        vehicle_thumb = ${thumb ?? null},
         updated_at    = now()
       where id = ${id}
       returning *

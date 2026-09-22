@@ -23,6 +23,7 @@ const blank = {
   status: 'pendiente',
   notes: '',
   vehicle_photo: null,
+  vehicle_thumb: null,
 };
 
 const fromParticipant = (participant) =>
@@ -40,6 +41,7 @@ const fromParticipant = (participant) =>
         status: participant.status,
         notes: participant.notes ?? '',
         vehicle_photo: participant.vehicle_photo ?? null,
+        vehicle_thumb: participant.vehicle_thumb ?? null,
       }
     : blank;
 
@@ -269,8 +271,8 @@ export default function ParticipantForm({ open, participant, onClose, onSubmit }
               label="Foto del vehículo"
               value={form.vehicle_photo}
               error={errors.vehicle_photo}
-              onChange={(dataUrl) => {
-                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl }));
+              onChange={(dataUrl, thumbDataUrl) => {
+                setForm((prev) => ({ ...prev, vehicle_photo: dataUrl, vehicle_thumb: thumbDataUrl }));
                 setErrors((prev) => ({ ...prev, vehicle_photo: undefined }));
               }}
             />

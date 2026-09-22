@@ -31,6 +31,10 @@ await sql`
 // Para bases creadas antes de que existiera el selector de estado.
 await sql`alter table participants add column if not exists state text`;
 
+// Foto del vehículo (data URL) y la miniatura que publica la landing.
+await sql`alter table participants add column if not exists vehicle_photo text`;
+await sql`alter table participants add column if not exists vehicle_thumb text`;
+
 // Subcategoría de arrancones. Se agrega en caliente para bases anteriores.
 // El CHECK se tira y se vuelve a crear en cada corrida a partir de
 // ARRANCONES_CLASS_IDS: así agregar una clase en shared/participants.js es el

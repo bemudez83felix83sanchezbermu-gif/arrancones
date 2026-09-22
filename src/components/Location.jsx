@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
-import { MapPin, Navigation } from 'lucide-react';
-import { EVENT } from '../data/event';
+import { Flag, MapPin, Navigation } from 'lucide-react';
+import { EVENT, MAPS_URL } from '../data/event';
 
 const MAP_QUERY = encodeURIComponent(
   `${EVENT.venue}, ${EVENT.city}, Mexico`,
 );
+const PARADE = EVENT.days[0];
 
 export default function Location() {
   return (
-    <section id="ubicacion" className="relative py-20 md:py-28">
+    <section id="ubicacion" className="relative overflow-hidden py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="mb-14 text-center">
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-racing-red">
@@ -42,6 +43,12 @@ export default function Location() {
                 <span className="text-white/50">Duración</span>
                 <span className="text-white">{EVENT.days.length} días</span>
               </div>
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="shrink-0 text-white/50">Desfile</span>
+                <span className="text-right text-white">
+                  {PARADE.date.split(' ')[0]} {PARADE.time} · {PARADE.place}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">Organiza</span>
                 <span className="text-white">{EVENT.organizer}</span>
@@ -56,6 +63,15 @@ export default function Location() {
             >
               <Navigation size={16} />
               Cómo llegar
+            </a>
+            <a
+              href={MAPS_URL(PARADE.mapsQuery)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost mt-3 w-full"
+            >
+              <Flag size={16} />
+              Salida del desfile
             </a>
           </motion.div>
 

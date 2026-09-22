@@ -221,3 +221,44 @@ export const activities = [
     ],
   },
 ];
+
+// Océano (Océano Luxury Rentals), patrocinador oficial. Sale de su flyer
+// "Oceano_Car_Fest_2026 V1 Spanish.pdf" (respaldo en _originales/hospedaje/oceano/).
+// Como el resto del catálogo, se reserva con el WhatsApp de la agencia: los
+// teléfonos de Océano del flyer no se publican.
+export const oceano = {
+  name: 'Océano',
+  folder: '/hospedaje/oceano',
+  tagline: 'Un fin de semana en el Mar de Cortés',
+  headline: 'Cerca del mar. Cerca de los autos.',
+  offer: 'Hasta 15% de descuento exclusivo del evento',
+  residences: [
+    {
+      slug: 'paz-del-mar',
+      name: 'Paz del Mar',
+      description: 'Villa privada para reuniones de hasta treinta personas.',
+    },
+    {
+      slug: 'casa-evita',
+      name: 'Casa Evita',
+      description: 'Frente al mar en Las Conchas.',
+    },
+    {
+      slug: 'casa-playa',
+      name: 'Casa Playa',
+      description: 'Frente al mar en Las Conchas.',
+    },
+  ],
+  forSale: {
+    slug: 'las-mareas-34',
+    eyebrow: 'Una invitación a ser dueño',
+    name: 'Mejor Vida',
+    address: 'Las Mareas 34',
+    features: ['Tres recámaras', 'Tres baños', 'Tercera fila, a unos pasos de la arena'],
+    // Confirmado con el organizador: USD 525 (el flyer dice "525,000 USD").
+    price: 525,
+    currency: 'USD',
+    note: 'Casa abierta durante el fin de semana del Car Fest',
+  },
+  finePrint: 'Hasta 15% en propiedades selectas disponibles. Sujeto a disponibilidad.',
+};

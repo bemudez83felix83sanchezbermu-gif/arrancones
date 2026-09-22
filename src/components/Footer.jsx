@@ -1,6 +1,23 @@
 import { MessageCircle } from 'lucide-react';
 import { FacebookIcon, InstagramIcon } from './BrandIcons';
 import { EVENT, WHATSAPP_URL } from '../data/event';
+import { Link } from '../router';
+
+const SECTIONS = [
+  { href: '#evento', label: 'Sobre el evento' },
+  { href: '#programa', label: 'Programa' },
+  { href: '#categorias', label: 'Categorías' },
+  { href: '#competidores', label: 'Competidores' },
+  { href: '#galeria', label: 'Galería' },
+  { href: '#ubicacion', label: 'Ubicación' },
+  { href: '#patrocinadores', label: 'Patrocinadores' },
+];
+
+const PAGES = [
+  { to: '/album', label: 'Álbum del evento' },
+  { to: '/hospedaje', label: 'Hospedaje y viajes' },
+  { to: '/registro', label: 'Inscribir mi vehículo' },
+];
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -26,11 +43,21 @@ export default function Footer() {
           <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
             Explora
           </h4>
-          <ul className="mt-4 space-y-2 text-sm text-white/70">
-            <li><a className="hover:text-white" href="#evento">Sobre el evento</a></li>
-            <li><a className="hover:text-white" href="#categorias">Categorías</a></li>
-            <li><a className="hover:text-white" href="#programa">Programa</a></li>
-            <li><a className="hover:text-white" href="#ubicacion">Ubicación</a></li>
+          <ul className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-white/70">
+            {SECTIONS.map((item) => (
+              <li key={item.href}>
+                <a className="hover:text-white" href={item.href}>
+                  {item.label}
+                </a>
+              </li>
+            ))}
+            {PAGES.map((item) => (
+              <li key={item.to}>
+                <Link className="text-racing-gold/90 hover:text-white" to={item.to}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 

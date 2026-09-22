@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "db:setup": "node --env-file-if-exists=.env.local scripts/db-setup.mjs",
+    "db:thumbs": "node --env-file-if-exists=.env.local scripts/backfill-thumbs.mjs",
     "check": "node scripts/check.mjs",
     "check:taquilla": "node scripts/check-taquilla.mjs",
     "propuesta:pdf": "node scripts/propuesta-pdf.mjs",

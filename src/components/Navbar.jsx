@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BedDouble, ClipboardList, Images, Menu, X } from 'lucide-react';
 import { Link } from '../router';
+import { useEventPhase } from '../lib/eventPhase';
 
 const links = [
   { href: '#evento', label: 'Evento' },
-  { href: '#categorias', label: 'Categorías' },
   { href: '#programa', label: 'Programa' },
+  { href: '#categorias', label: 'Categorías' },
   { href: '#galeria', label: 'Galería' },
   { href: '#ubicacion', label: 'Ubicación' },
   { href: '#contacto', label: 'Contacto' },
@@ -15,6 +16,11 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  // Al cerrar inscripciones el botón rojo del menú lleva al álbum.
+  const { registrationOpen } = useEventPhase();
+  const cta = registrationOpen
+    ? { to: '/registro', label: 'Inscríbete', long: 'Inscribir mi vehículo', icon: ClipboardList }
+    : { to: '/album', label: 'Ver álbum', long: 'Ver álbum del evento', icon: Images };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -81,21 +87,21 @@ export default function Navbar() {
           </Link>
 
           <Link
-            to="/registro"
+            to={cta.to}
             className="inline-flex items-center gap-2 bg-racing-red px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110"
             style={{ clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)' }}
           >
-            <ClipboardList size={15} /> Inscríbete
+            <cta.icon size={15} /> {cta.label}
           </Link>
         </nav>
 
         <div className="flex items-center gap-3 md:hidden">
           <Link
-            to="/registro"
+            to={cta.to}
             className="bg-racing-red px-4 py-2 text-xs font-bold uppercase tracking-wider text-white"
             style={{ clipPath: 'polygon(8% 0, 100% 0, 92% 100%, 0 100%)' }}
           >
-            Inscríbete
+            {cta.label}
           </Link>
           <button
             className="text-white"
@@ -146,11 +152,11 @@ export default function Navbar() {
             </Link>
 
             <Link
-              to="/registro"
+              to={cta.to}
               onClick={() => setOpen(false)}
               className="mt-3 flex items-center justify-center gap-2 bg-racing-red py-3 text-sm font-bold uppercase tracking-wider text-white"
             >
-              <ClipboardList size={16} /> Inscribir mi vehículo
+              <cta.icon size={16} /> {cta.long}
             </Link>
           </div>
         </motion.nav>

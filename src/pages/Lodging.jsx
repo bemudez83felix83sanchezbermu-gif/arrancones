@@ -8,6 +8,7 @@ import {
   Home,
   Info,
   MapPin,
+  MessageCircle,
   Ship,
   Users,
   UtensilsCrossed,
@@ -16,11 +17,14 @@ import { Link } from '../router';
 import LodgingImage from '../components/LodgingImage';
 import {
   PROPOSAL_PDF,
+  RESERVATIONS_WHATSAPP_DISPLAY,
   activities,
   hotels,
   houses,
+  oceano,
   reservationLink,
   restaurants,
+  whatsappLink,
 } from '../data/lodging';
 
 const TABS = [
@@ -244,7 +248,151 @@ function LodgingTab() {
           ))}
         </div>
       </div>
+
+      <div>
+        <SectionHeading
+          eyebrow="Patrocinador oficial"
+          title="Residencias frente al mar con Océano"
+          description="Tres residencias con oferta exclusiva para el fin de semana del Car Fest. Resérvalas con la agencia oficial del evento."
+        />
+        <OceanoFeature />
+      </div>
     </div>
+  );
+}
+
+// Colores del flyer de Océano: papel crema, arena y tinta café.
+const OCEANO_INK = 'text-[#140F0A]';
+
+function OceanoFeature() {
+  const { folder, residences, forSale } = oceano;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.5 }}
+      className={`mt-8 overflow-hidden rounded-3xl bg-[#F7F3EC] ${OCEANO_INK}`}
+    >
+      <div className="relative">
+        <img
+          src={`${folder}/portada.webp`}
+          alt="Autos deportivos frente al mar al atardecer"
+          loading="lazy"
+          className="h-72 w-full object-cover md:h-96"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
+        <div className="absolute inset-0 flex flex-col justify-end gap-3 p-6 text-white md:justify-center md:p-10">
+          <span className="self-start rounded-full border border-[#E8DCC8]/50 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#E8DCC8] backdrop-blur">
+            Patrocinador oficial
+          </span>
+          <p className="text-sm font-semibold uppercase tracking-[0.6em] text-white md:text-base">
+            {oceano.name}
+          </p>
+          <p className="max-w-md font-serif text-3xl leading-tight md:text-5xl">{oceano.tagline}</p>
+          <p className="text-sm italic text-[#E8DCC8] md:text-base">{oceano.headline}</p>
+        </div>
+      </div>
+
+      <div className="space-y-10 p-5 md:p-10">
+        <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#8A6F45]">
+            Tres residencias
+          </p>
+          <span className="rounded-full bg-[#140F0A] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#F7F3EC]">
+            {oceano.offer}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {residences.map((home) => (
+            <article key={home.slug} className="overflow-hidden rounded-2xl bg-white shadow-sm">
+              <img
+                src={`${folder}/${home.slug}.webp`}
+                alt={home.name}
+                loading="lazy"
+                className="aspect-[4/3] w-full object-cover"
+              />
+              <div className="p-4">
+                <h3 className="font-serif text-2xl">{home.name}</h3>
+                <p className="mt-1 text-sm text-[#140F0A]/70">{home.description}</p>
+                <a
+                  href={reservationLink({ name: `${home.name} (Océano)` })}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex text-xs font-bold uppercase tracking-wider text-[#8A6F45] transition hover:text-[#140F0A]"
+                >
+                  Reservar →
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-[#C4A574]/50 p-5 text-center md:p-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#8A6F45]">Reservas</p>
+          <p className="mt-2 text-sm text-[#140F0A]/70">
+            Con la agencia oficial del Car Fest, por WhatsApp.
+          </p>
+          <a
+            href={whatsappLink(
+              'Hola, me interesa reservar una residencia de Océano (Paz del Mar, Casa Evita o Casa Playa) para el Car Fest 2K26.',
+            )}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-[#140F0A] px-5 py-3 text-sm font-semibold text-[#F7F3EC] transition hover:bg-[#2A2118]"
+          >
+            <MessageCircle size={15} />
+            <span className="whitespace-nowrap">{RESERVATIONS_WHATSAPP_DISPLAY}</span>
+          </a>
+        </div>
+
+        <article className="grid grid-cols-1 overflow-hidden rounded-2xl bg-[#140F0A] text-[#F7F3EC] md:grid-cols-[1.1fr_1fr]">
+          <img
+            src={`${folder}/${forSale.slug}.webp`}
+            alt={`${forSale.name}, ${forSale.address}`}
+            loading="lazy"
+            className="aspect-[3/2] h-full w-full object-cover"
+          />
+          <div className="flex flex-col justify-center gap-4 p-6 md:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#C4A574]">
+              {forSale.eyebrow}
+            </p>
+            <div>
+              <h3 className="font-serif text-4xl">{forSale.name}</h3>
+              <p className="mt-1 text-sm uppercase tracking-[0.25em] text-[#E8DCC8]/80">
+                {forSale.address}
+              </p>
+            </div>
+            <ul className="space-y-1 text-sm text-[#F7F3EC]/80">
+              {forSale.features.map((feature) => (
+                <li key={feature}>· {feature}</li>
+              ))}
+            </ul>
+            <p className="font-serif text-3xl text-[#E8DCC8]">
+              {formatPrice(forSale.price, forSale.currency)}
+            </p>
+            <p className="flex items-start gap-2 text-xs text-[#F7F3EC]/70">
+              <Info size={13} className="mt-0.5 flex-none text-[#C4A574]" />
+              {forSale.note}
+            </p>
+            <a
+              href={whatsappLink(
+                `Hola, me interesa la casa ${forSale.name} (${forSale.address}) de Océano que vi en el sitio del Car Fest 2K26.`,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 self-start rounded-full bg-[#E8DCC8] px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#140F0A] transition hover:brightness-105"
+            >
+              <MessageCircle size={14} /> Pedir informes
+            </a>
+          </div>
+        </article>
+
+        <p className="text-center text-[11px] text-[#140F0A]/55">{oceano.finePrint}</p>
+      </div>
+    </motion.section>
   );
 }
 

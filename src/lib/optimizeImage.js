@@ -1,4 +1,4 @@
-import { VEHICLE_PHOTO_MAX_KB } from '../../shared/participants.js';
+import { VEHICLE_PHOTO_MAX_KB, VEHICLE_THUMB_MAX_KB } from '../../shared/participants.js';
 
 /**
  * Intentos de codificación, del mejor al más comprimido. Se usa el primero
@@ -10,6 +10,12 @@ const ATTEMPTS = [
   { maxSide: 1024, quality: 0.6 },
   { maxSide: 800, quality: 0.5 },
 ];
+
+/**
+ * Miniatura para la landing: la tarjeta de competidores mide 260×340 y el domo
+ * abre la foto a 420px, así que 640px de lado alcanza en pantallas 2x.
+ */
+const THUMB = { maxSide: 640, quality: 0.66 };
 
 const ALLOWED = /^data:image\/(webp|jpeg|png);base64,/;
 
@@ -30,7 +36,8 @@ function photoError(detail) {
  * (Safari viejo y varios webviews dentro de apps), porque `canvas.toBlob`
  * regresa PNG en silencio cuando el formato pedido no existe.
  *
- * Devuelve { dataUrl, mime, sizeKb, width, height }.
+ * Devuelve { dataUrl, thumbDataUrl, mime, sizeKb, width, height }. `thumbDataUrl`
+ * es null si la miniatura no se pudo preparar: nunca frena el registro.
  */
 export async function optimizeImage(file, { maxKb = VEHICLE_PHOTO_MAX_KB } = {}) {
   if (!file) throw photoError('sin archivo');
@@ -59,6 +66,7 @@ export async function optimizeImage(file, { maxKb = VEHICLE_PHOTO_MAX_KB } = {})
     }
     return {
       dataUrl,
+      thumbDataUrl: await encodeThumb(bitmap, mime),
       mime: dataUrl.slice(5, dataUrl.indexOf(';')),
       sizeKb: Math.round(best.blob.size / 1024),
       width: best.width,
@@ -66,6 +74,18 @@ export async function optimizeImage(file, { maxKb = VEHICLE_PHOTO_MAX_KB } = {})
     };
   } finally {
     bitmap.close?.();
+  }
+}
+
+async function encodeThumb(bitmap, mime) {
+  try {
+    const { blob } = await encode(bitmap, mime, THUMB);
+    if (blob.size > VEHICLE_THUMB_MAX_KB * 1024) return null;
+    const dataUrl = await blobToDataUrl(blob);
+    return ALLOWED.test(dataUrl) ? dataUrl : null;
+  } catch (err) {
+    console.warn('[foto] miniatura', err?.cause ?? err);
+    return null;
   }
 }
 

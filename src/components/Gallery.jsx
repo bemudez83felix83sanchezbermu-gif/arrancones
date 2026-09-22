@@ -8,47 +8,29 @@ const SEGMENTS = 18;
 // DomeGallery acomoda 5 mosaicos por columna; lo que pase de ahí no se ve.
 const DOME_TILES = SEGMENTS * 5;
 
-/**
- * `vehicle_photo` llega como data URL base64. El domo repite cada foto en varios
- * mosaicos y la copia en `src` y `data-src`, así que se pasa a object URL: el DOM
- * carga una URL corta y el navegador decodifica la imagen una sola vez.
- */
-function toObjectUrl(dataUrl) {
-  const match = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl ?? '');
-  if (!match) return null;
-  try {
-    const binary = atob(match[2]);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return URL.createObjectURL(new Blob([bytes], { type: match[1] }));
-  } catch {
-    return null;
-  }
-}
-
 export default function Gallery() {
   const [carImages, setCarImages] = useState([]);
 
-  // Si el endpoint falla, el domo se queda con las fotos fijas.
+  // Si el endpoint falla, el domo se queda con las fotos fijas. `photo_url` es
+  // una miniatura cacheable: el domo la repite en varios mosaicos y el
+  // navegador la baja y decodifica una sola vez.
   useEffect(() => {
     let alive = true;
-    const created = [];
     listPublicParticipants()
       .then((participants) => {
         if (!alive) return;
-        const next = [];
-        for (const participant of participants) {
-          const src = toObjectUrl(participant.vehicle_photo);
-          if (!src) continue;
-          created.push(src);
-          next.push({ src, alt: `${participant.vehicle_name} — ${participant.pilot_name}` });
-        }
-        setCarImages(next);
+        setCarImages(
+          participants
+            .filter((participant) => participant.photo_url)
+            .map((participant) => ({
+              src: participant.photo_url,
+              alt: `${participant.vehicle_name} — ${participant.pilot_name}`,
+            })),
+        );
       })
       .catch(() => {});
     return () => {
       alive = false;
-      created.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 

@@ -7,7 +7,7 @@ import { optimizeImage } from '../lib/optimizeImage';
  * el navegador no sabe codificar WebP) y expone un data URL. Se usa igual en
  * el formulario público y en el panel.
  *
- * Props: value (data URL o null), onChange(dataUrl|null), onFail(bool) para
+ * Props: value (data URL o null), onChange(dataUrl|null, thumbDataUrl|null), onFail(bool) para
  * avisar al formulario que la foto no se pudo preparar, error, disabled.
  */
 export default function PhotoUploader({
@@ -35,7 +35,7 @@ export default function PhotoUploader({
     try {
       const result = await optimizeImage(file);
       setMeta({ sizeKb: result.sizeKb, width: result.width, height: result.height });
-      onChange(result.dataUrl);
+      onChange(result.dataUrl, result.thumbDataUrl);
       onFail?.(false);
     } catch (err) {
       setLocalError(err.message ?? 'No pudimos preparar esta foto. Intenta con otra.');
@@ -48,7 +48,7 @@ export default function PhotoUploader({
   const clear = () => {
     setMeta(null);
     setLocalError('');
-    onChange(null);
+    onChange(null, null);
     onFail?.(false);
   };
 

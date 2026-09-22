@@ -13,6 +13,9 @@ export const CATEGORIES = {
     feeLabel: 'Cortesía',
     allowsCopilot: true,
     day: 'Sábado 26 de septiembre',
+    // Drift corre el sábado junto con el car show: cierra el mismo viernes.
+    closesAt: '2026-09-25T23:59:59-07:00',
+    closesLabel: 'viernes 25',
     tagline: 'Exhibición de derrapes',
     note: 'Los drifters no pagan inscripción.',
     color: '#F5B301',
@@ -25,6 +28,8 @@ export const CATEGORIES = {
     feeLabel: '$250 MXN',
     allowsCopilot: true,
     day: 'Sábado 26 de septiembre',
+    closesAt: '2026-09-25T23:59:59-07:00',
+    closesLabel: 'viernes 25',
     tagline: 'Exposición y premiación',
     note: 'Incluye el registro de tu auto más un copiloto gratis.',
     color: '#3B9EFF',
@@ -38,6 +43,8 @@ export const CATEGORIES = {
     allowsCopilot: false,
     requiresRaceClass: true,
     day: 'Domingo 27 de septiembre',
+    closesAt: '2026-09-26T23:59:59-07:00',
+    closesLabel: 'sábado 26',
     tagline: 'Carrera de aceleración',
     note: 'Durante las corridas solo puede ir el piloto en el auto. Tu acompañante puede entrar al evento contigo, pero no sube al vehículo cuando corras.',
     color: '#E10600',
@@ -46,6 +53,19 @@ export const CATEGORIES = {
 };
 
 export const CATEGORY_IDS = Object.keys(CATEGORIES);
+
+/**
+ * Cada categoría cierra inscripciones el día antes de competir (hora de
+ * Sonora): drift y car show el viernes 25, arrancones el sábado 26. El panel
+ * puede seguir dando altas manuales después del cierre.
+ */
+export const isCategoryOpen = (id, now = Date.now()) => {
+  const closesAt = CATEGORIES[id]?.closesAt;
+  return Boolean(CATEGORIES[id]) && (!closesAt || now <= Date.parse(closesAt));
+};
+
+export const openCategoryIds = (now = Date.now()) =>
+  CATEGORY_IDS.filter((id) => isCategoryOpen(id, now));
 
 /**
  * Clases dentro de arrancones (según el orden de inicio del evento). El id se
@@ -132,10 +152,19 @@ export const socialLabel = (value) =>
 export const VEHICLE_PHOTO_MAX_KB = 900;
 
 /**
+ * Miniatura que publica la landing (tarjetas de competidores y domo). La foto
+ * completa solo la baja el panel: 28 fotos completas pesaban ~6 MB en la landing.
+ */
+export const VEHICLE_THUMB_MAX_KB = 150;
+
+/**
  * Valida el data URL de la foto. Regresa `{ ok, error, value }`.
  * `requireValue = true` cuando el formulario público no debe permitir enviar sin foto.
  */
-export function validateVehiclePhoto(input, { requireValue = false } = {}) {
+export function validateVehiclePhoto(
+  input,
+  { requireValue = false, maxKb = VEHICLE_PHOTO_MAX_KB } = {},
+) {
   const value = typeof input === 'string' ? input.trim() : '';
   if (!value) {
     if (requireValue) return { ok: false, error: 'Sube una foto de tu vehículo.' };
@@ -148,10 +177,10 @@ export function validateVehiclePhoto(input, { requireValue = false } = {}) {
   // 1 char de base64 ~ 0.75 bytes; se compara contra el máximo en KB.
   const prefixLength = `data:image/${match[1]};base64,`.length;
   const approxBytes = Math.floor((value.length - prefixLength) * 0.75);
-  if (approxBytes > VEHICLE_PHOTO_MAX_KB * 1024) {
+  if (approxBytes > maxKb * 1024) {
     return {
       ok: false,
-      error: `La foto pesa demasiado (>${VEHICLE_PHOTO_MAX_KB} KB). Súbela más chica.`,
+      error: `La foto pesa demasiado (>${maxKb} KB). Súbela más chica.`,
     };
   }
   return { ok: true, value };
@@ -248,6 +277,14 @@ export function validateParticipant(input = {}, { partial = false, requirePhoto 
     const check = validateVehiclePhoto(input.vehicle_photo, { requireValue: requirePhoto });
     if (!check.ok) errors.vehicle_photo = check.error;
     else if (check.value !== undefined) value.vehicle_photo = check.value;
+  }
+
+  // La miniatura la genera el uploader junto con la foto. Nunca frena un registro:
+  // si falta o no es válida se guarda null, la landing cae a la foto completa y
+  // `npm run db:thumbs` la repone.
+  if (sent('vehicle_thumb')) {
+    const check = validateVehiclePhoto(input.vehicle_thumb, { maxKb: VEHICLE_THUMB_MAX_KB });
+    value.vehicle_thumb = check.ok ? check.value : null;
   }
 
   if (sent('status')) {

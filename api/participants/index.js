@@ -1,6 +1,6 @@
 import { asParticipant, getSql, json, readBody, withErrors } from '../../shared/db.js';
 import { getCurrentAdmin } from '../../shared/auth.js';
-import { validateParticipant } from '../../shared/participants.js';
+import { CATEGORIES, isCategoryOpen, validateParticipant } from '../../shared/participants.js';
 
 export default withErrors(async (req, res) => {
   const sql = getSql();
@@ -32,10 +32,19 @@ export default withErrors(async (req, res) => {
         social: body.social ?? '',
         race_class: body.race_class ?? '',
         vehicle_photo: body.vehicle_photo ?? '',
+        vehicle_thumb: body.vehicle_thumb ?? null,
       },
       { requirePhoto: false },
     );
     if (!ok) return json(res, 422, { error: 'Revisa los datos del formulario', errors });
+
+    // El formulario público respeta el cierre por categoría; el panel no, para
+    // poder dar de alta a quien se inscribe en persona.
+    if (!isCategoryOpen(value.category) && !(await getCurrentAdmin(req))) {
+      const { label, closesLabel } = CATEGORIES[value.category];
+      const error = `Las inscripciones de ${label} cerraron el ${closesLabel}.`;
+      return json(res, 422, { error, errors: { category: error } });
+    }
 
     const [duplicate] = await sql`
       select id from participants
@@ -52,11 +61,12 @@ export default withErrors(async (req, res) => {
 
     const [participant] = await sql`
       insert into participants
-        (pilot_name, copilot_name, category, race_class, vehicle_name, phone, state, city, social, status, vehicle_photo)
+        (pilot_name, copilot_name, category, race_class, vehicle_name, phone, state, city, social, status,
+         vehicle_photo, vehicle_thumb)
       values
         (${value.pilot_name}, ${value.copilot_name}, ${value.category}, ${value.race_class ?? null},
          ${value.vehicle_name}, ${value.phone}, ${value.state}, ${value.city}, ${value.social}, 'pendiente',
-         ${value.vehicle_photo ?? null})
+         ${value.vehicle_photo ?? null}, ${value.vehicle_photo ? value.vehicle_thumb ?? null : null})
       returning *
     `;
     return json(res, 201, { participant: asParticipant(participant) });
